@@ -4,9 +4,7 @@ import Mathlib.Analysis.NormedSpace.Multilinear
 
 open Classical
 
-namespace ContinuousAlternatingMap
 
-section Basic
 
 universe u v w w₂
 
@@ -17,10 +15,11 @@ variable (R : Type u) (M : Type w) [Semiring R] [AddCommMonoid M]
 structure ContinuousAlternatingMap extends AlternatingMap R M N ι where
 cont : Continuous toFun
 
-def toAlternatingMap (u : ContinuousAlternatingMap R M N ι) := u.toAlternatingMap
-
+namespace ContinuousAlternatingMap
 
 variable {R M N ι}
+
+section Basic
 
 variable (f g : ContinuousAlternatingMap R M N ι)
 
@@ -319,7 +318,7 @@ instance : Module R' (ContinuousAlternatingMap A M N ι) :=
 
 /-- Linear map version of the map `toAlternatingMap` associating to a continuous alternating map
 the corresponding alternating map. -/
-@[simps!]
+@[simps]
 def toAlternatingMapLinear : ContinuousAlternatingMap A M N ι →ₗ[R'] AlternatingMap A M N ι where
   toFun f := f.toAlternatingMap
   map_add' := toAlternatingMap_add
