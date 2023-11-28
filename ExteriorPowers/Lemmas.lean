@@ -141,6 +141,28 @@ LinearIndependent R v := by
     exact h1 i j (Ne.symm hij)
 
 
+lemma vector_normalize (𝕜 E : Type*) [NontriviallyNormedField 𝕜] [SeminormedAddCommGroup E] [NormedSpace 𝕜 E] (x : E) :
+∃ (y : E) (a : 𝕜), ‖y‖ ≤ 1 ∧ x = a • y  := by
+  by_cases hx : ‖x‖ = 0
+  . existsi x; existsi 1
+    rw [hx, one_smul]
+    simp only [zero_le_one, and_self]
+  . have hx' : 0 < ‖x‖⁻¹ := by
+      rw [lt_iff_le_and_ne]
+      simp only [inv_nonneg, norm_nonneg, ne_eq, zero_eq_inv, Ne.symm hx, not_false_eq_true,
+        and_self]
+    obtain ⟨a, ha⟩ := NormedField.exists_norm_lt 𝕜 hx'
+    existsi a • x; existsi a⁻¹
+    rw [norm_smul, smul_smul, inv_mul_cancel, one_smul]
+    simp only [and_true]
+    . refine le_trans (mul_le_mul (le_of_lt ha.2) (le_refl _) (norm_nonneg _) ?_) ?_
+      . simp only [inv_nonneg, norm_nonneg]
+      . rw [inv_mul_cancel hx]
+    . by_contra h
+      rw [h, norm_zero] at ha
+      exact lt_irrefl 0 ha.1
+
+
 /- These next two results would be nice to have but I don't need them.-/
 /-
 lemma Cardinal.le_of_map (α β : Type u) (f : α → β) [Infinite β] (hcard : ∀ (b :β), Cardinal.mk (f ⁻¹' {b}) ≤ Cardinal.mk β) :

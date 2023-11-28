@@ -390,3 +390,133 @@ toContinuousMultilinearMapLinear
 end Norm
 
 end ContinuousAlternatingMap
+
+open BigOperators Finset
+
+theorem MultilinearMap.norm_image_sub_le_of_bound'_sn {𝕜 : Type u} {ι : Type v} {E : ι → Type wE} {G : Type wG}
+[Fintype ι] [NontriviallyNormedField 𝕜] [(i : ι) → SeminormedAddCommGroup (E i)] [(i : ι) → NormedSpace 𝕜 (E i)]
+[SeminormedAddCommGroup G] [NormedSpace 𝕜 G] (f : MultilinearMap 𝕜 E G) [DecidableEq ι] {C : ℝ} (hC : 0 ≤ C)
+(H : ∀ (m : (i : ι) → E i), ‖f m‖ ≤ C * Finset.prod Finset.univ fun (i : ι) => ‖m i‖) (m₁ : (i : ι) → E i) (m₂ : (i : ι) → E i) :
+‖f m₁ - f m₂‖ ≤   C *     Finset.sum Finset.univ fun (i : ι) =>
+      Finset.prod Finset.univ fun (j : ι) => if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖ := by
+  have A :
+    ∀ s : Finset ι,
+      ‖f m₁ - f (s.piecewise m₂ m₁)‖ ≤
+        C * ∑ i in s, ∏ j, if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖ := by
+    intro s
+    induction' s using Finset.induction with i s his Hrec
+    · simp
+    have I :
+      ‖f (s.piecewise m₂ m₁) - f ((insert i s).piecewise m₂ m₁)‖ ≤
+        C * ∏ j, if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖ := by
+      have A : (insert i s).piecewise m₂ m₁ = Function.update (s.piecewise m₂ m₁) i (m₂ i) :=
+        s.piecewise_insert _ _ _
+      have B : s.piecewise m₂ m₁ = Function.update (s.piecewise m₂ m₁) i (m₁ i) := by
+        ext j
+        by_cases h : j = i
+        · rw [h]
+          simp [his]
+        · simp [h]
+      rw [B, A, ← f.map_sub]
+      apply le_trans (H _)
+      gcongr with j
+      · exact fun j _ => norm_nonneg _
+      by_cases h : j = i
+      · rw [h]
+        simp
+      · by_cases h' : j ∈ s <;> simp [h', h, le_refl]
+    calc
+      ‖f m₁ - f ((insert i s).piecewise m₂ m₁)‖ ≤
+          ‖f m₁ - f (s.piecewise m₂ m₁)‖ +
+            ‖f (s.piecewise m₂ m₁) - f ((insert i s).piecewise m₂ m₁)‖ := by
+        rw [← dist_eq_norm, ← dist_eq_norm, ← dist_eq_norm]
+        exact dist_triangle _ _ _
+      _ ≤
+          (C * ∑ i in s, ∏ j, if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖) +
+            C * ∏ j, if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖ :=
+        (add_le_add Hrec I)
+      _ = C * ∑ i in insert i s, ∏ j, if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖ := by
+        simp [his, add_comm, left_distrib]
+  convert A univ
+  simp
+
+
+theorem MultilinearMap.norm_image_sub_le_of_bound_sn {𝕜 : Type u} {ι : Type v} {E : ι → Type wE} {G : Type wG} [Fintype ι]
+[NontriviallyNormedField 𝕜] [(i : ι) → SeminormedAddCommGroup (E i)] [(i : ι) → NormedSpace 𝕜 (E i)] [SeminormedAddCommGroup G]
+[NormedSpace 𝕜 G] (f : MultilinearMap 𝕜 E G) {C : ℝ} (hC : 0 ≤ C) (H : ∀ (m : (i : ι) → E i),
+‖f m‖ ≤ C * Finset.prod Finset.univ fun (i : ι) => ‖m i‖) (m₁ : (i : ι) → E i) (m₂ : (i : ι) → E i) :
+‖f m₁ - f m₂‖ ≤ C * ↑(Fintype.card ι) * max ‖m₁‖ ‖m₂‖ ^ (Fintype.card ι - 1) * ‖m₁ - m₂‖ := by
+  classical
+  have A :
+    ∀ i : ι,
+      ∏ j, (if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖) ≤
+        ‖m₁ - m₂‖ * max ‖m₁‖ ‖m₂‖ ^ (Fintype.card ι - 1) := by
+    intro i
+    calc
+      ∏ j, (if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖) ≤
+          ∏ j : ι, Function.update (fun _ => max ‖m₁‖ ‖m₂‖) i ‖m₁ - m₂‖ j := by
+        apply prod_le_prod
+        · intro j _
+          by_cases h : j = i <;> simp [h, norm_nonneg]
+        · intro j _
+          by_cases h : j = i
+          · rw [h]
+            simp only [ite_true, Function.update_same]
+            exact norm_le_pi_norm (m₁ - m₂) i
+          · simp [h, -le_max_iff, -max_le_iff, max_le_max, norm_le_pi_norm (_ : ∀ i, E i)]
+      _ = ‖m₁ - m₂‖ * max ‖m₁‖ ‖m₂‖ ^ (Fintype.card ι - 1) := by
+        rw [prod_update_of_mem (Finset.mem_univ _)]
+        simp [card_univ_diff]
+  calc
+    ‖f m₁ - f m₂‖ ≤ C * ∑ i, ∏ j, if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖ :=
+      f.norm_image_sub_le_of_bound'_sn hC H m₁ m₂
+    _ ≤ C * ∑ _i, ‖m₁ - m₂‖ * max ‖m₁‖ ‖m₂‖ ^ (Fintype.card ι - 1) := by gcongr; apply A
+    _ = C * Fintype.card ι * max ‖m₁‖ ‖m₂‖ ^ (Fintype.card ι - 1) * ‖m₁ - m₂‖ := by
+      rw [sum_const, card_univ, nsmul_eq_mul]
+      ring
+
+
+
+theorem MultilinearMap.continuous_of_bound_sn {𝕜 : Type u} {ι : Type v} {E : ι → Type wE} {G : Type wG} [Fintype ι]
+[NontriviallyNormedField 𝕜] [(i : ι) → SeminormedAddCommGroup (E i)] [(i : ι) → NormedSpace 𝕜 (E i)] [SeminormedAddCommGroup G]
+[NormedSpace 𝕜 G] (f : MultilinearMap 𝕜 E G) (C : ℝ) (H : ∀ (m : (i : ι) → E i), ‖f m‖ ≤ C * Finset.prod Finset.univ
+fun (i : ι) => ‖m i‖) :
+Continuous f.toFun := by
+  let D := max C 1
+  have D_pos : 0 ≤ D := le_trans zero_le_one (le_max_right _ _)
+  replace H : ∀ (m : (i : ι) → E i), ‖f m‖ ≤ D * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)
+  · intro m
+    apply le_trans (H m) (mul_le_mul_of_nonneg_right (le_max_left _ _) _)
+    exact Finset.prod_nonneg fun (i : ι) _ => norm_nonneg (m i)
+  refine' continuous_iff_continuousAt.2 fun m => _
+  refine'
+    continuousAt_of_locally_lipschitz zero_lt_one
+      (D * Fintype.card ι * (‖m‖ + 1) ^ (Fintype.card ι - 1)) fun m' h' => _
+  rw [dist_eq_norm, dist_eq_norm]
+  have : max ‖m'‖ ‖m‖ ≤ ‖m‖ + 1 := by
+    simp [zero_le_one, norm_le_of_mem_closedBall (le_of_lt h')]
+  calc
+    ‖f m' - f m‖ ≤ D * Fintype.card ι * max ‖m'‖ ‖m‖ ^ (Fintype.card ι - 1) * ‖m' - m‖ :=
+      f.norm_image_sub_le_of_bound_sn D_pos H m' m
+    _ ≤ D * Fintype.card ι * (‖m‖ + 1) ^ (Fintype.card ι - 1) * ‖m' - m‖ := by gcongr
+
+
+namespace AlternatingMap
+
+variable {𝕜 ι E F : Type*} [Fintype ι] [NontriviallyNormedField 𝕜] [SeminormedAddCommGroup E] [NormedSpace 𝕜 E]
+[SeminormedAddCommGroup F] [NormedSpace 𝕜 F]
+
+/-- Constructing a continuous alternating map from an alternating map satisfying a boundedness
+condition. -/
+def mkContinuousAlternating (f : AlternatingMap 𝕜 E F ι) (C : ℝ)
+(H : ∀ (m : ι → E), ‖f m‖ ≤ C * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)) : ContinuousAlternatingMap 𝕜 E F ι :=
+  { f with cont := f.continuous_of_bound_sn C H }
+
+
+@[simp]
+theorem coe_mkContinuousAlternating (f : AlternatingMap 𝕜 E F ι) (C : ℝ)
+(H : ∀ (m : ι → E), ‖f m‖ ≤ C * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)) :
+(AlternatingMap.mkContinuousAlternating f C H).toAlternatingMap = f :=
+  rfl
+
+end AlternatingMap
