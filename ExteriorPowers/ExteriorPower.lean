@@ -270,6 +270,7 @@ liftAlternatingEquiv R n
 
 variable {M}
 
+@[simp]
 lemma toTensorPower_apply_ιMulti (v : Fin n → M) :
 toTensorPower R M n (ιMulti R n v) =
 Finset.sum Finset.univ (fun (σ : Equiv.Perm (Fin n)) => Equiv.Perm.sign σ •
@@ -279,44 +280,85 @@ Finset.sum Finset.univ (fun (σ : Equiv.Perm (Fin n)) => Equiv.Perm.sign σ •
   rw [MultilinearMap.alternatization_apply]
   simp only [MultilinearMap.domDomCongr_apply]
 
-lemma toTensorPower_apply_ιMulti_family {I : Type*} [LinearOrder I] (v : I → M)
+/-lemma toTensorPower_apply_ιMulti_family {I : Type*} [LinearOrder I] (v : I → M)
 {s : Finset I} (hs : Finset.card s = n) :
 toTensorPower R M n (ιMulti_family R n v ⟨s, hs⟩) =
 Finset.sum Finset.univ (fun (σ : Equiv.Perm (Fin n)) => Equiv.Perm.sign σ •
 (PiTensorProduct.tprod R (fun i => v (Finset.orderIsoOfFin s hs (σ i))))) := by
   unfold ιMulti_family
   simp only [Finset.coe_orderIsoOfFin_apply]
-  rw [toTensorPower_apply_ιMulti]
+  rw [toTensorPower_apply_ιMulti]-/
 
-noncomputable def TensorPower_linearForm {I : Type*} [LinearOrder I] (b : Basis I R M)
-{s : Finset I} (hs : Finset.card s = n) : TensorPower R n M →ₗ[R] R := by
-  apply PiTensorProduct.lift.toFun
-  exact MultilinearMap.compLinearMap (MultilinearMap.mkPiRing R (Fin n) 1)
-    (fun i => b.coord (Finset.orderIsoOfFin s hs i))
 
-lemma TensorPower_linearForm_apply_tprod {I : Type*} [LinearOrder I] (b : Basis I R M)
-{s : Finset I} (hs : Finset.card s = n) (v : Fin n → M) :
-TensorPower_linearForm R n b hs (PiTensorProduct.tprod R v) =
-Finset.prod Finset.univ (fun i => b.coord (Finset.orderIsoOfFin s hs i) (v i)) := by
-  unfold TensorPower_linearForm
+noncomputable def TensorPower_linearFormOfFamily (f : (i : Fin n) → (M →ₗ[R] R)) :
+TensorPower R n M →ₗ[R] R := PiTensorProduct.lift
+(MultilinearMap.compLinearMap (MultilinearMap.mkPiRing R (Fin n) 1) f)
+
+@[simp]
+lemma TensorPower_linearFormOfFamily_apply_tprod (f : (i : Fin n) → (M →ₗ[R] R)) (v : Fin n → M) :
+TensorPower_linearFormOfFamily R n f (PiTensorProduct.tprod R v) =
+Finset.prod Finset.univ (fun i => (f i (v i))) := by
+  unfold TensorPower_linearFormOfFamily
   simp only [Finset.coe_orderIsoOfFin_apply, AddHom.toFun_eq_coe, LinearMap.coe_toAddHom, LinearEquiv.coe_coe,
     PiTensorProduct.lift.tprod, MultilinearMap.compLinearMap_apply, Basis.coord_apply, MultilinearMap.mkPiRing_apply,
     smul_eq_mul, _root_.mul_one]
 
+noncomputable def linearFormOfFamily (f : (i : Fin n) → (M →ₗ[R] R)) :
+ExteriorPower R M n →ₗ[R] R :=
+LinearMap.comp (TensorPower_linearFormOfFamily R n f) (toTensorPower R M n)
 
-lemma TensorPower_linearForm_apply_diag {I : Type*} [LinearOrder I] (b : Basis I R M)
+@[simp]
+lemma linearFormOfFamily_apply (f : (i : Fin n) → (M →ₗ[R] R)) (x : ExteriorPower R M n) :
+linearFormOfFamily R n f x = TensorPower_linearFormOfFamily R n f (toTensorPower R M n x) := by
+  unfold linearFormOfFamily
+  simp only [LinearMap.coe_comp, Function.comp_apply]
+
+@[simp]
+lemma linearFormOfFamily_apply_ιMulti (f : (i : Fin n) → (M →ₗ[R] R)) (m : Fin n → M) :
+linearFormOfFamily R n f (ιMulti R n m) = Finset.sum Finset.univ (fun (σ : Equiv.Perm (Fin n)) => Equiv.Perm.sign σ •
+Finset.prod Finset.univ (fun (i : Fin n) => f i (m (σ i)))) := by
+  simp only [linearFormOfFamily_apply, toTensorPower_apply_ιMulti, map_sum,
+    LinearMap.map_smul_of_tower, TensorPower_linearFormOfFamily_apply_tprod]
+
+
+noncomputable def alternatingFormOfFamily (f : (i : Fin n) → (M →ₗ[R] R)) :
+AlternatingMap R M R (Fin n) :=
+(linearFormOfFamily R n f).compAlternatingMap (ιMulti R n)
+
+@[simp]
+lemma alternatingFormOfFamily_apply (f : (i : Fin n) → (M →ₗ[R] R)) (m : Fin n → M) :
+alternatingFormOfFamily R n f m = linearFormOfFamily R n f (ιMulti R n m) := by
+  unfold alternatingFormOfFamily
+  rw [LinearMap.compAlternatingMap_apply]
+
+noncomputable def linearFormOfBasis {I : Type*} [LinearOrder I] (b : Basis I R M)
+{s : Finset I} (hs : Finset.card s = n) : ExteriorPower R M n →ₗ[R] R :=
+linearFormOfFamily R n (fun i => b.coord (Finset.orderIsoOfFin s hs i))
+
+@[simp]
+lemma linearFormOfBasis_apply_ιMulti {I : Type*} [LinearOrder I] (b : Basis I R M)
+{s : Finset I} (hs : Finset.card s = n) (v : Fin n → M) :
+linearFormOfBasis R n b hs (ιMulti R n v) =
+Finset.sum Finset.univ (fun (σ : Equiv.Perm (Fin n)) => Equiv.Perm.sign σ •
+Finset.prod Finset.univ (fun i => b.coord (Finset.orderIsoOfFin s hs i) (v (σ i)))) := by
+  unfold linearFormOfBasis
+  simp only [Finset.coe_orderIsoOfFin_apply, linearFormOfFamily_apply, toTensorPower_apply_ιMulti,
+    map_sum, LinearMap.map_smul_of_tower, TensorPower_linearFormOfFamily_apply_tprod,
+    Basis.coord_apply]
+
+lemma linearFormOfBasis_apply_diag {I : Type*} [LinearOrder I] (b : Basis I R M)
 {s : Finset I} (hs : Finset.card s = n) :
-TensorPower_linearForm R n b hs (toTensorPower R M n
-(ιMulti_family R n b ⟨s, hs⟩)) = 1 := by
-  rw [toTensorPower_apply_ιMulti_family, map_sum]
+linearFormOfBasis R n b hs (ιMulti_family R n b ⟨s, hs⟩) = 1 := by
+  unfold ιMulti_family
+  simp only [Finset.coe_orderIsoOfFin_apply, linearFormOfBasis_apply_ιMulti]
   have hzero : ∀ (σ : Equiv.Perm (Fin n)), σ ∈ Finset.univ → ¬σ ∈ ({Equiv.refl (Fin n)} :
-    Finset (Equiv.Perm (Fin n))) → TensorPower_linearForm R n b hs
+    Finset (Equiv.Perm (Fin n))) → TensorPower_linearFormOfFamily R n (fun i => b.coord (Finset.orderIsoOfFin s hs i))
     (Equiv.Perm.sign σ • ⨂ₜ[R] (i : Fin n), b ((Finset.orderIsoOfFin s hs) (σ i))) = 0 := by
     intro σ _ hσ
     simp only [Finset.mem_singleton] at hσ
     erw [LinearMap.map_smul]
     apply smul_eq_zero_of_right
-    rw [TensorPower_linearForm_apply_tprod]
+    simp only [Finset.coe_orderIsoOfFin_apply, TensorPower_linearFormOfFamily_apply_tprod]
     have h : ∃ (i : Fin n), ¬ σ i = i := by
       by_contra habs
       push_neg at habs
@@ -330,16 +372,14 @@ TensorPower_linearForm R n b hs (toTensorPower R M n
     simp only [Finset.coe_orderIsoOfFin_apply, OrderEmbedding.eq_iff_eq, ite_eq_right_iff]
     simp only [hi, IsEmpty.forall_iff]
   have heq := Finset.sum_subset (s₁ := {Equiv.refl (Fin n)}) (Finset.subset_univ _) hzero
+  simp only [Finset.coe_orderIsoOfFin_apply, LinearMap.map_smul_of_tower,
+    TensorPower_linearFormOfFamily_apply_tprod, Basis.coord_apply, Basis.repr_self, ne_eq,
+    RelEmbedding.inj, Finset.sum_singleton, Equiv.Perm.sign_refl, Equiv.refl_apply,
+    Finsupp.single_eq_same, Finset.prod_const_one, one_smul] at heq ⊢
   rw [←heq]
-  simp only [Finset.coe_orderIsoOfFin_apply, LinearMap.map_smul_of_tower, Finset.sum_singleton, Equiv.Perm.sign_refl,
-    Equiv.refl_apply, one_smul]
-  rw [TensorPower_linearForm_apply_tprod]
-  apply Finset.prod_eq_one
-  intro i _
-  simp only [Finset.coe_orderIsoOfFin_apply, Basis.coord_apply, Basis.repr_self, Finsupp.single_eq_same]
 
 
-lemma TensorPower_linearForm_apply_nondiag_aux {I : Type*} [LinearOrder I]
+lemma linearFormOfBasis_apply_nondiag_aux {I : Type*} [LinearOrder I]
 {s t : Finset I} (hs : Finset.card s = n) (ht : Finset.card t = n) (hst : s ≠ t) (σ : Equiv.Perm (Fin n)) :
 ∃ (i : Fin n), (Finset.orderIsoOfFin s hs i).1 ≠ (Finset.orderIsoOfFin t ht (σ i)).1 := by
   by_contra habs
@@ -355,18 +395,16 @@ lemma TensorPower_linearForm_apply_nondiag_aux {I : Type*} [LinearOrder I]
     exact b.2
   . rw [hs, ht]
 
-
-lemma TensorPower_linearForm_apply_nondiag {I : Type*} [LinearOrder I] (b : Basis I R M)
+lemma linearFormOfBasis_apply_nondiag {I : Type*} [LinearOrder I] (b : Basis I R M)
 {s t : Finset I} (hs : Finset.card s = n) (ht : Finset.card t = n) (hst : s ≠ t) :
-TensorPower_linearForm R n b hs (toTensorPower R M n
-(ιMulti_family R n b ⟨t, ht⟩)) = 0 := by
-  rw [toTensorPower_apply_ιMulti_family, map_sum]
+linearFormOfBasis R n b hs (ιMulti_family R n b ⟨t, ht⟩) = 0 := by
+  unfold ιMulti_family
+  simp only [Finset.coe_orderIsoOfFin_apply, linearFormOfBasis_apply_ιMulti]
   apply Finset.sum_eq_zero
   intro σ _
-  erw [LinearMap.map_smul]
+  erw [zsmul_eq_smul_cast R]
   apply smul_eq_zero_of_right
-  rw [TensorPower_linearForm_apply_tprod]
-  obtain ⟨i, hi⟩ := TensorPower_linearForm_apply_nondiag_aux n hs ht hst σ
+  obtain ⟨i, hi⟩ := linearFormOfBasis_apply_nondiag_aux n hs ht hst σ
   apply Finset.prod_eq_zero (a := i) (Finset.mem_univ _)
   rw [Basis.coord_apply, Basis.repr_self_apply]
   simp only [Finset.coe_orderIsoOfFin_apply, ne_eq] at hi
@@ -376,17 +414,16 @@ TensorPower_linearForm R n b hs (toTensorPower R M n
 noncomputable def BasisOfBasis {I : Type*} [LinearOrder I] (b : Basis I R M) :
 Basis {s : Finset I // Finset.card s = n} R (ExteriorPower R M n) := by
   apply Basis.mk (v := ιMulti_family R n b)
-  . apply LinearIndependent.of_comp (toTensorPower R M n)
-    apply linearIndependent_of_dualFamily R _
-      (fun s => TensorPower_linearForm R n b s.2)
+  . apply linearIndependent_of_dualFamily R _
+      (fun s => linearFormOfBasis R n b s.2)
     . intro ⟨s, hs⟩ ⟨t, ht⟩ hst
       simp only [ne_eq, Subtype.mk.injEq] at hst
       simp only [Function.comp_apply]
-      apply TensorPower_linearForm_apply_nondiag
+      apply linearFormOfBasis_apply_nondiag
       exact hst
     . intro ⟨s, hs⟩
       simp only [Function.comp_apply]
-      apply TensorPower_linearForm_apply_diag
+      apply linearFormOfBasis_apply_diag
   . rw [span_of_span']
     rw [Basis.span_eq]
 
@@ -518,5 +555,82 @@ variable {K E F: Type*} [Field K] [AddCommGroup E]
 lemma map_injective_field {f : E →ₗ[K] F} (hf : LinearMap.ker f = ⊥) :
 Function.Injective (map n f) :=
 map_injective n (LinearMap.exists_leftInverse_of_injective f hf)
+
+
+/- Every element of ExteriorPower R M n is in the image of ExteriorPower R P n, for some finitely generated submodule
+P of M.-/
+
+lemma range_ExteriorPower_submodule_le {P Q : Submodule R M} (hPQ : P ≤ Q) :
+LinearMap.range (map n (Submodule.subtype P)) ≤ LinearMap.range (map n (Submodule.subtype Q)) := by
+  intro x hx
+  rw [LinearMap.mem_range]
+  obtain ⟨y, hyx⟩ := hx
+  rw [←hyx]
+  have hy : y ∈ (⊤ : Submodule R (ExteriorPower R P n)) := by simp only [Submodule.mem_top]
+  rw [←ExteriorPower.ιMulti_span] at hy
+  apply Submodule.span_induction hy (p := fun y => ∃ z, (map n (Submodule.subtype Q)) z = (map n (Submodule.subtype P)) y)
+  . intro x hx
+    rw [Set.mem_range] at hx
+    obtain ⟨m, hmx⟩ := hx
+    existsi ExteriorPower.ιMulti R n (M := Q) (fun i => ⟨(m i).1, hPQ (m i).2⟩)
+    rw [map_apply_ιMulti, ←hmx, map_apply_ιMulti]
+    apply congrArg
+    ext i
+    simp only [Submodule.coeSubtype, Function.comp_apply]
+  . existsi 0
+    rw [map_zero, map_zero]
+  . intro x y ⟨z, hz⟩ ⟨z', hz'⟩
+    existsi z + z'
+    rw [map_add, map_add, hz, hz']
+  . intro a y ⟨z, hz⟩
+    existsi a • z
+    rw [map_smul, map_smul, hz]
+
+
+
+lemma mem_ExteriorPowerSup {P Q : Submodule R M} (x : ExteriorPower R P n) (y : ExteriorPower R Q n) :
+ExteriorPower.map n (Submodule.subtype P) x + ExteriorPower.map n (Submodule.subtype Q) y ∈
+LinearMap.range (ExteriorPower.map n (Submodule.subtype (P ⊔ Q))) := by
+  apply Submodule.add_mem
+  . apply range_ExteriorPower_submodule_le n le_sup_left
+    simp only [LinearMap.mem_range, exists_apply_eq_apply]
+  . apply range_ExteriorPower_submodule_le n le_sup_right
+    simp only [LinearMap.mem_range, exists_apply_eq_apply]
+
+
+lemma mem_exteriorPowerFiniteSubmodule (x : ExteriorPower R M n) :
+∃ (P : Submodule R M), Submodule.FG P ∧ x ∈ LinearMap.range (ExteriorPower.map n (Submodule.subtype P)) := by
+  have hx : x ∈ (⊤ : Submodule R (ExteriorPower R M n)) := by simp only [Submodule.mem_top]
+  rw [←ExteriorPower.ιMulti_span] at hx
+  apply Submodule.span_induction hx (p := fun x => ∃ (P : Submodule R M), Submodule.FG P ∧ x ∈ LinearMap.range
+    (ExteriorPower.map n (Submodule.subtype P)))
+  . intro x hx
+    rw [Set.mem_range] at hx
+    obtain ⟨m, hmx⟩ := hx
+    existsi Submodule.span R (Set.range m)
+    rw [and_iff_right (Submodule.fg_span (Set.finite_range m)), LinearMap.mem_range]
+    have hm : ∀ (i : Fin n), m i ∈ Submodule.span R (Set.range m) := by
+      intro i
+      apply Submodule.subset_span
+      simp only [Set.mem_range, exists_apply_eq_apply]
+    existsi ιMulti R n (fun i => ⟨m i, hm i⟩)
+    simp only [Subtype.mk.injEq, map_apply_ιMulti, Submodule.coeSubtype, Function.comp_apply]
+    rw [←hmx]
+    apply congrArg
+    ext i
+    simp only [Function.comp_apply]
+  . existsi (⊥ : Submodule R M)
+    exact ⟨Submodule.fg_bot, Submodule.zero_mem _⟩
+  . intro x y ⟨Px, hx⟩ ⟨Py, hy⟩
+    existsi Px ⊔ Py
+    rw [and_iff_right (Submodule.FG.sup hx.1 hy.1)]
+    rw [LinearMap.mem_range] at hx hy
+    obtain ⟨x', hxx'⟩ := hx.2
+    obtain ⟨y', hyy'⟩ := hy.2
+    rw [←hxx', ←hyy']
+    exact mem_ExteriorPowerSup n x' y'
+  . intro a x ⟨P, h⟩
+    existsi P
+    exact ⟨h.1, Submodule.smul_mem _ a h.2⟩
 
 end ExteriorPower

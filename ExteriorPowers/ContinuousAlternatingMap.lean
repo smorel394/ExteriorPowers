@@ -377,10 +377,10 @@ section Norm
 variable {𝕜 ι E F : Type*} [Fintype ι] [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-noncomputable instance instSemiNormedAddCommGroupContinuousAlternatingMap : SeminormedAddCommGroup
+noncomputable instance instNormedAddCommGroupContinuousAlternatingMap : NormedAddCommGroup
 (ContinuousAlternatingMap 𝕜 E F ι) :=
-SeminormedAddCommGroup.induced (ContinuousAlternatingMap 𝕜 E F ι) (ContinuousMultilinearMap 𝕜 (fun (_ : ι) => E) F)
-toContinuousMultilinearMapAddMonoidHom
+NormedAddCommGroup.induced (ContinuousAlternatingMap 𝕜 E F ι) (ContinuousMultilinearMap 𝕜 (fun (_ : ι) => E) F)
+toContinuousMultilinearMapAddMonoidHom toContinuousMultilinearMap_injective
 
 
 noncomputable instance instNormedSpaceContinuousAlternatingMap : NormedSpace 𝕜 (ContinuousAlternatingMap 𝕜 E F ι) :=
