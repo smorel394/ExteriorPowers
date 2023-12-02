@@ -341,7 +341,7 @@ def codRestrict (f : ContinuousAlternatingMap R M N ι) (p : Submodule R N) (h :
 
 /- If `g` is continuous alternating and `f` is a continuous linear maps,
 then `g (f m₁, ..., f mₙ)` is again a continuous alternating map, that we call
-`g.compContinuousLinearMap f`. -/
+`g.-ContinuousLinearMap f`. -/
 variable {P} [AddCommMonoid P] [Module R P] [TopologicalSpace P]
 
 def compContinuousLinearMap (g : ContinuousAlternatingMap R M N ι)

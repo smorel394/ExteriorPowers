@@ -1,7 +1,6 @@
 import Mathlib.Tactic
 import Mathlib.Analysis.NormedSpace.Dual
 import ExteriorPowers.ExteriorPower
-import ExteriorPowers.SeparatingMaps
 import ExteriorPowers.ContinuousAlternatingMap
 
 
@@ -138,16 +137,38 @@ def ιMulti_continuous : ContinuousAlternatingMap 𝕜 E (ExteriorPower 𝕜 E r
 AlternatingMap.mkContinuousAlternating (𝕜 := 𝕜) (E := E) (F := ExteriorPower 𝕜 E r) (ι := Fin r) (ιMulti 𝕜 r (M := E)) 1
 (by intro (m : Fin r → E); rw [one_mul]; exact SeminormExteriorPower_apply_ιMulti_le (𝕜 := 𝕜) m)
 
+/- This is trivial from what we already did, but I can't state it yet because ContinuousAlternatingMap doesn't
+have a morm unless the origin space is normed and not just semi-normed-/
+--lemma ιMulti_continuous_norm : ‖ιMulti_continuous (𝕜 := 𝕜) (E := E) (r := r)‖ ≤ 1 := sorry
 
-lemma liftContinuousAlternating_norm (f : ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) (x : ExteriorPower 𝕜 E r) :
+lemma liftContinuousAlternating_normAt (f : ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) (x : ExteriorPower 𝕜 E r) :
 ‖ExteriorPower.liftAlternating r f.toAlternatingMap x‖ ≤  ‖f‖ * ‖x‖ := by
   rw [←toDualContinuousAlternatingMapLinear_apply, mul_comm]
   exact ContinuousLinearMap.le_op_norm _ f
 
-lemma liftContinuousAlternating_continuous (f : ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) :
-Continuous (ExteriorPower.liftAlternating r f.toAlternatingMap) :=
+variable (r)
+
+def liftContinuousAlternating (f : ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) :
+ExteriorPower 𝕜 E r →L[𝕜] 𝕜 :=
+⟨liftAlternating r f.toAlternatingMap,
 AddMonoidHomClass.continuous_of_bound (ExteriorPower.liftAlternating r f.toAlternatingMap) ‖f‖
-    (fun x => liftContinuousAlternating_norm f x)
+    (fun x => liftContinuousAlternating_normAt f x)⟩
+
+variable {r}
+
+lemma liftContinuousAlternating_norm (f : ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) :
+‖liftContinuousAlternating r f‖ ≤  ‖f‖ := by
+  apply ContinuousLinearMap.op_norm_le_bound
+  . exact norm_nonneg f
+  . exact fun x => liftContinuousAlternating_normAt f x
+
+
+def liftContinuousAlternating_invFun (L : ExteriorPower 𝕜 E r →L[𝕜] 𝕜) :
+ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r) :=
+L.compContinuousAlternatingMap ιMulti_continuous
+
+-- TODO : the continuous linear equivalence between ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r) and the
+-- continuous dual of ExteriorPower 𝕜 E r.
 
 
 noncomputable def continuousAlternatingFormOfFamily (f : (i : Fin r) → (E →L[𝕜] 𝕜)) :
@@ -178,19 +199,14 @@ AlternatingMap.mkContinuousAlternating (alternatingFormOfFamily 𝕜 r (fun i =>
       (fun i _ => ContinuousLinearMap.le_op_norm (f i) (m (σ i)))
 )
 
+@[simp]
+lemma continuousAlternatingFormOfFamily_apply (f : (i : Fin r) → (E →L[𝕜] 𝕜)) :
+(continuousAlternatingFormOfFamily f).toAlternatingMap = alternatingFormOfFamily 𝕜 r
+(fun i => (f i).toLinearMap) := by
+  unfold continuousAlternatingFormOfFamily
+  rw [AlternatingMap.coe_mkContinuousAlternating]
 
 
-section SeparatingDual
-
-variable [SeparatingDual 𝕜 E]
-
-lemma toDualContinuousAlternatingMapLinear_injective : Function.Injective
-(toDualContinuousAlternatingMapLinear 𝕜 E r) := by
-  rw [←LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
-  intro x hx
-  sorry
-
-end SeparatingDual
 
 
 

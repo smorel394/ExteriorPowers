@@ -1,6 +1,9 @@
 import Mathlib.Tactic
 import ExteriorPowers.ExteriorAlgebra
 
+open Classical
+
+set_option maxHeartbeats 300000
 
 variable (R M N N' : Type*)
 variable [CommRing R] [AddCommGroup M]
@@ -280,15 +283,6 @@ Finset.sum Finset.univ (fun (σ : Equiv.Perm (Fin n)) => Equiv.Perm.sign σ •
   rw [MultilinearMap.alternatization_apply]
   simp only [MultilinearMap.domDomCongr_apply]
 
-/-lemma toTensorPower_apply_ιMulti_family {I : Type*} [LinearOrder I] (v : I → M)
-{s : Finset I} (hs : Finset.card s = n) :
-toTensorPower R M n (ιMulti_family R n v ⟨s, hs⟩) =
-Finset.sum Finset.univ (fun (σ : Equiv.Perm (Fin n)) => Equiv.Perm.sign σ •
-(PiTensorProduct.tprod R (fun i => v (Finset.orderIsoOfFin s hs (σ i))))) := by
-  unfold ιMulti_family
-  simp only [Finset.coe_orderIsoOfFin_apply]
-  rw [toTensorPower_apply_ιMulti]-/
-
 
 noncomputable def TensorPower_linearFormOfFamily (f : (i : Fin n) → (M →ₗ[R] R)) :
 TensorPower R n M →ₗ[R] R := PiTensorProduct.lift
@@ -427,6 +421,33 @@ Basis {s : Finset I // Finset.card s = n} R (ExteriorPower R M n) := by
   . rw [span_of_span']
     rw [Basis.span_eq]
 
+lemma BasisOfBasis_coe {I : Type*} [LinearOrder I] (b : Basis I R M) :
+FunLike.coe (BasisOfBasis R n b) = ιMulti_family R n b := Basis.coe_mk _ _
+
+lemma BasisOfBasis_apply {I : Type*} [LinearOrder I] (b : Basis I R M)
+{s : Finset I} (hs : Finset.card s = n) :
+BasisOfBasis R n b ⟨s, hs⟩ = ιMulti_family R n b ⟨s, hs⟩ := by
+  rw [BasisOfBasis_coe]
+
+lemma BasisOfBasis_coord {I : Type*} [LinearOrder I] (b : Basis I R M)
+{s : Finset I} (hs : Finset.card s = n) :
+Basis.coord (BasisOfBasis R n b) ⟨s, hs⟩ = linearFormOfBasis R n b hs := by
+  apply LinearMap.ext_on (ExteriorPower.span_of_span' R n (Basis.span_eq b))
+  intro x hx
+  rw [Set.mem_range] at hx
+  obtain ⟨⟨t, ht⟩, htx⟩ := hx
+  rw [←htx]
+  conv_lhs => rw [←BasisOfBasis_apply]
+  by_cases heq : s = t
+  . have heq' : (⟨s, hs⟩ : {s : Finset I // Finset.card s = n}) = ⟨t, ht⟩ := by
+      simp only [Subtype.mk.injEq]; exact heq
+    rw [←heq']
+    rw [linearFormOfBasis_apply_diag]
+    simp only [Basis.coord_apply, Basis.repr_self, Finsupp.single_eq_same]
+  . rw [linearFormOfBasis_apply_nondiag R n b hs ht heq]
+    rw [Basis.coord_apply, Basis.repr_self_apply]
+    simp only [Subtype.mk.injEq, Ne.symm heq, ite_false]
+
 lemma FreeOfFree (hfree : Module.Free R M) : Module.Free R
 (ExteriorPower R M n) := by
   obtain ⟨I, b⟩ := (Classical.choice hfree.exists_basis)
@@ -525,6 +546,27 @@ LinearMap.comp (map n g) (map n f) = map n (LinearMap.comp g f) := by
   rw [Function.comp.assoc]
 
 
+lemma linearFormOfFamily_compExteriorPowerMap (f : (i : Fin n) → (M →ₗ[R] R))
+(p : N →ₗ[R] M) :
+LinearMap.comp (linearFormOfFamily R n f) (ExteriorPower.map n p) =
+linearFormOfFamily R n (fun (i : Fin n) => (f i).comp p) := by
+  apply LinearMap.ext_on (ιMulti_span R n (M :=N))
+  intro x hx
+  rw [Set.mem_range] at hx
+  obtain ⟨y, h⟩ := hx
+  rw [←h]
+  simp only [LinearMap.coe_comp, Function.comp_apply, map_apply_ιMulti, linearFormOfFamily_apply,
+    toTensorPower_apply_ιMulti, map_sum, LinearMap.map_smul_of_tower,
+    TensorPower_linearFormOfFamily_apply_tprod]
+
+
+lemma linearFormOfFamily_compExteriorPowerMap_apply (f : (i : Fin n) → (M →ₗ[R] R))
+(p : N →ₗ[R] M) (x : ExteriorPower R N n) :
+(linearFormOfFamily R n f) (ExteriorPower.map n p x) =
+linearFormOfFamily R n (fun (i : Fin n) => (f i).comp p) x := by
+  rw [←LinearMap.comp_apply, linearFormOfFamily_compExteriorPowerMap]
+
+
 lemma map_injective {f : M →ₗ[R] N} (hf : ∃ (g : N →ₗ[R] M), g.comp f = LinearMap.id) :
 Function.Injective (map n f) := by
   obtain ⟨g, hgf⟩ := hf
@@ -573,19 +615,18 @@ LinearMap.range (map n (Submodule.subtype P)) ≤ LinearMap.range (map n (Submod
     rw [Set.mem_range] at hx
     obtain ⟨m, hmx⟩ := hx
     existsi ExteriorPower.ιMulti R n (M := Q) (fun i => ⟨(m i).1, hPQ (m i).2⟩)
-    rw [map_apply_ιMulti, ←hmx, map_apply_ιMulti]
+    rw [ExteriorPower.map_apply_ιMulti, ←hmx, ExteriorPower.map_apply_ιMulti]
     apply congrArg
     ext i
     simp only [Submodule.coeSubtype, Function.comp_apply]
   . existsi 0
-    rw [map_zero, map_zero]
+    rw [LinearMap.map_zero, LinearMap.map_zero]
   . intro x y ⟨z, hz⟩ ⟨z', hz'⟩
     existsi z + z'
-    rw [map_add, map_add, hz, hz']
+    rw [LinearMap.map_add, LinearMap.map_add, hz, hz']
   . intro a y ⟨z, hz⟩
     existsi a • z
-    rw [map_smul, map_smul, hz]
-
+    rw [LinearMap.map_smul, LinearMap.map_smul, hz]
 
 
 lemma mem_ExteriorPowerSup {P Q : Submodule R M} (x : ExteriorPower R P n) (y : ExteriorPower R Q n) :

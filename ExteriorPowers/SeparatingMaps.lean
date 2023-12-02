@@ -99,7 +99,10 @@ variable (𝕜 E)
 
 
 /- TODO: reformulate this so it doesn't mention the Grassmannian.
-"For every finite-dimensional subspace W, there exists f..."-/
+"For every finite-dimensional subspace W, there exists f..."
+Not clear that this is a good idea, because then we get a continuous linear map
+into (Fin finrank W) → 𝕜, which is more unwieldfy.
+-/
 def SeparatingMaps (r : ℕ) : Prop := ∀ (W : Grassmannian 𝕜 E r), ∃ (f : E →L[𝕜] (Fin r → 𝕜)),
 (W.1 ⊓ (LinearMap.ker f) = ⊥)
 
@@ -112,10 +115,12 @@ lemma SeparatingMaps_zero : SeparatingMaps 𝕜 E 0 := by
   rw [hWrank]
   simp only [ge_iff_le, bot_le, inf_of_le_left]
 
+/-
+def SeparatingMaps' : Prop := ∀ (W : Submodule 𝕜 E), FiniteDimensional 𝕜 W → ∃ (f : E →L[𝕜] (Fin (FiniteDimensional.finrank 𝕜 W) → 𝕜)),
+(W ⊓ (LinearMap.ker f) = ⊥)
+-/
 
 variable {𝕜 E}
-
-
 
 
 lemma SeparatingMaps_iff_target_aux (r : ℕ) (W : Grassmannian 𝕜 E r) [FiniteDimensional 𝕜 F]
@@ -139,6 +144,35 @@ lemma SeparatingMaps_iff_target (r : ℕ) (W : Grassmannian 𝕜 E r) [FiniteDim
 (∃ (f : E →L[𝕜] F), (W.1 ⊓ (LinearMap.ker f) = ⊥)) ↔
 (∃ (f : E →L[𝕜] G), (W.1 ⊓ (LinearMap.ker f) = ⊥)) :=
 ⟨SeparatingMaps_iff_target_aux r W hrankF hrankG, SeparatingMaps_iff_target_aux r W hrankG hrankF⟩
+
+lemma SeparatingMaps_iff_projection (r : ℕ) (W : Grassmannian 𝕜 E r) :
+(∃ (f : E →L[𝕜] (Fin r → 𝕜)), (W.1 ⊓ (LinearMap.ker f) = ⊥)) ↔
+(∃ (f : E →L[𝕜] W), ∀ (v : W.1), f v = v) := by
+  letI := W.2.1
+  rw [SeparatingMaps_iff_target (Fin r → 𝕜) W.1 r W (by simp only [FiniteDimensional.finrank_fintype_fun_eq_card,
+    Fintype.card_fin]) W.2.2]
+  constructor
+  . intro ⟨f, hf⟩
+    erw [SeparatingMaps_iff_bijective] at hf
+    set e := LinearEquiv.toContinuousLinearEquiv (LinearEquiv.ofBijective
+      (LinearMap.comp f.toLinearMap (Submodule.subtype W.1)) hf)
+    existsi ContinuousLinearMap.comp e.symm.toContinuousLinearMap f
+    intro v
+    simp only [ContinuousLinearMap.coe_comp', ContinuousLinearEquiv.coe_coe,
+      LinearEquiv.coe_toContinuousLinearEquiv_symm', Function.comp_apply]
+    have heq : f v = e v := by simp only [LinearEquiv.coe_toContinuousLinearEquiv',
+      LinearEquiv.ofBijective_apply, LinearMap.coe_comp, Submodule.coeSubtype, Function.comp_apply]; rfl
+    rw [heq]
+    simp only [ContinuousLinearEquiv.coe_coe, LinearEquiv.coe_toContinuousLinearEquiv', LinearEquiv.symm_apply_apply]
+    exact W.2.2
+  . intro ⟨f, hf⟩
+    existsi f
+    rw [Submodule.eq_bot_iff]
+    intro v hv
+    simp only [ge_iff_le, Submodule.mem_inf, LinearMap.mem_ker] at hv
+    rw [hf ⟨v, hv.1⟩] at hv
+    simp only [Submodule.mk_eq_zero] at hv
+    exact hv.2
 
 variable {F G}
 
