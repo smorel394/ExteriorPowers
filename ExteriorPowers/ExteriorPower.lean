@@ -65,6 +65,7 @@ def ιMulti : AlternatingMap R M (ExteriorPower R M n) (Fin n) := by
   unfold ιMulti
   simp only [AlternatingMap.codRestrict_apply_coe]
 
+
 -- Here to use in rewrites.
 lemma ιMulti_span_fixedDegree :
 Submodule.span R (Set.range (ExteriorAlgebra.ιMulti R n)) =

@@ -138,7 +138,8 @@ AlternatingMap.mkContinuousAlternating (𝕜 := 𝕜) (E := E) (F := ExteriorPow
 (by intro (m : Fin r → E); rw [one_mul]; exact SeminormExteriorPower_apply_ιMulti_le (𝕜 := 𝕜) m)
 
 /- This is trivial from what we already did, but I can't state it yet because ContinuousAlternatingMap doesn't
-have a morm unless the origin space is normed and not just semi-normed-/
+have a morm unless the origin space is normed and not just semi-normed. So we put this lemma and
+the following in ExteriorNormedSeparatingDual.lean for now.-/
 --lemma ιMulti_continuous_norm : ‖ιMulti_continuous (𝕜 := 𝕜) (E := E) (r := r)‖ ≤ 1 := sorry
 
 lemma liftContinuousAlternating_normAt (f : ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) (x : ExteriorPower 𝕜 E r) :
@@ -146,29 +147,52 @@ lemma liftContinuousAlternating_normAt (f : ContinuousAlternatingMap 𝕜 E 𝕜
   rw [←toDualContinuousAlternatingMapLinear_apply, mul_comm]
   exact ContinuousLinearMap.le_op_norm _ f
 
-variable (r)
+variable (r 𝕜 E)
 
-def liftContinuousAlternating (f : ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) :
-ExteriorPower 𝕜 E r →L[𝕜] 𝕜 :=
+def liftContinuousAlternating : (ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) →ₗ[𝕜]
+(ExteriorPower 𝕜 E r →L[𝕜] 𝕜) :=
+{toFun := fun f =>
 ⟨liftAlternating r f.toAlternatingMap,
 AddMonoidHomClass.continuous_of_bound (ExteriorPower.liftAlternating r f.toAlternatingMap) ‖f‖
     (fun x => liftContinuousAlternating_normAt f x)⟩
+ map_add' := by intro f g; ext _; simp only [ContinuousAlternatingMap.toAlternatingMap_add, map_add,
+   ContinuousLinearMap.coe_mk', LinearMap.add_apply, ContinuousLinearMap.add_apply]
+ map_smul' := by intro a d; ext _; simp only [ContinuousAlternatingMap.toAlternatingMap_smul,
+   map_smul, ContinuousLinearMap.coe_mk', LinearMap.smul_apply, smul_eq_mul, RingHom.id_apply,
+   ContinuousLinearMap.coe_smul', Pi.smul_apply]
+}
 
-variable {r}
+variable {r 𝕜 E}
 
-lemma liftContinuousAlternating_norm (f : ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) :
-‖liftContinuousAlternating r f‖ ≤  ‖f‖ := by
+lemma liftContinuousAlternating_norm_le (f : ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) :
+‖liftContinuousAlternating 𝕜 E r f‖ ≤  ‖f‖ := by
   apply ContinuousLinearMap.op_norm_le_bound
   . exact norm_nonneg f
   . exact fun x => liftContinuousAlternating_normAt f x
 
+lemma liftCOntinuousAlternating_continuous : Continuous (liftContinuousAlternating 𝕜 E r) :=
+AddMonoidHomClass.continuous_of_bound
+(liftContinuousAlternating 𝕜 E r) 1 (fun f => by rw [one_mul]; exact liftContinuousAlternating_norm_le f)
 
-def liftContinuousAlternating_invFun (L : ExteriorPower 𝕜 E r →L[𝕜] 𝕜) :
-ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r) :=
-L.compContinuousAlternatingMap ιMulti_continuous
+variable (r 𝕜 E)
+
+
+def liftContinuousAlternating_invFun : (ExteriorPower 𝕜 E r →L[𝕜] 𝕜) →ₗ[𝕜]
+(ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) :=
+{toFun := fun L => L.compContinuousAlternatingMap ιMulti_continuous
+ map_add' := fun f g => by ext _; simp only [ContinuousLinearMap.compContinuousAlternatingMap_coe,
+   Function.comp_apply, ContinuousLinearMap.add_apply, ContinuousAlternatingMap.add_apply]
+ map_smul' := fun a f => by ext _; simp only [ContinuousLinearMap.compContinuousAlternatingMap_coe,
+   ContinuousLinearMap.coe_smul', Function.comp_apply, Pi.smul_apply, smul_eq_mul, RingHom.id_apply,
+   ContinuousAlternatingMap.smul_apply]
+}
+
+
+variable {r 𝕜 E}
+
 
 -- TODO : the continuous linear equivalence between ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r) and the
--- continuous dual of ExteriorPower 𝕜 E r.
+-- continuous dual of ExteriorPower 𝕜 E r. See ExteriorNormedSeparatingDual.lean for now.
 
 
 noncomputable def continuousAlternatingFormOfFamily (f : (i : Fin r) → (E →L[𝕜] 𝕜)) :

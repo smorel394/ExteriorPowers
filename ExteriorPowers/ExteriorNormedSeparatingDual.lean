@@ -73,9 +73,63 @@ lemma opSeminorm_is_norm {x : ExteriorPower 𝕜 E r} (hx : ‖x‖ = 0) : x = 0
 noncomputable instance instNormedAddCommGroupExteriorPower : NormedAddCommGroup (ExteriorPower 𝕜 E r) :=
 NormedAddCommGroup.ofSeparation (fun _ hx => opSeminorm_is_norm hx)
 
+lemma ιMulti_continuous_norm : ‖ιMulti_continuous (𝕜 := 𝕜) (E := E) (r := r)‖ ≤ 1 := by
+  apply ContinuousMultilinearMap.op_norm_le_bound
+  . simp only [zero_le_one]
+  . intro m
+    rw [one_mul]
+    exact SeminormExteriorPower_apply_ιMulti_le m
+
+lemma liftContinuousAlternating_invFun_norm_le (L : ExteriorPower 𝕜 E r →L[𝕜] 𝕜) :
+‖liftContinuousAlternating_invFun 𝕜 E r L‖ ≤ ‖L‖ := by
+  apply ContinuousMultilinearMap.op_norm_le_bound
+  . exact norm_nonneg _
+  . intro m
+    unfold liftContinuousAlternating_invFun
+    simp only [LinearMap.coe_mk, AddHom.coe_mk]
+    refine le_trans (ContinuousLinearMap.le_op_norm _ _) ( mul_le_mul_of_nonneg_left ?_ (norm_nonneg _))
+    change ‖ιMulti_continuous m‖ ≤ _
+    refine le_trans (ContinuousMultilinearMap.le_op_norm (ιMulti_continuous (𝕜 := 𝕜)
+      (E := E) (r :=r)).toContinuousMultilinearMap m) ?_
+    exact mul_le_of_le_one_left (Finset.prod_nonneg (fun i _ => norm_nonneg _)) ιMulti_continuous_norm
+
+lemma liftContinuousAlternating_invFun_continuous : Continuous (liftContinuousAlternating_invFun 𝕜 E r) :=
+AddMonoidHomClass.continuous_of_bound
+(liftContinuousAlternating_invFun 𝕜 E r) 1 (fun L => by rw [one_mul]; exact liftContinuousAlternating_invFun_norm_le L)
+
+variable (𝕜 E r)
 
 
+noncomputable def liftContinuousAlternating_equiv : (ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) ≃ₗ[𝕜]
+(ExteriorPower 𝕜 E r →L[𝕜] 𝕜) := LinearEquiv.ofLinear
+(liftContinuousAlternating 𝕜 E r) (liftContinuousAlternating_invFun 𝕜 E r)
+(by ext L x
+    unfold liftContinuousAlternating liftContinuousAlternating_invFun ιMulti_continuous
+      AlternatingMap.mkContinuousAlternating ContinuousLinearMap.compContinuousAlternatingMap
+    simp only [LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk, Function.comp_apply,
+      ContinuousLinearMap.coe_mk', LinearMap.id_coe, id_eq]
+    change liftAlternating r (LinearMap.compAlternatingMap _ (ιMulti 𝕜 r)) x = _
+    rw [liftAlternating_comp]
+    simp only [liftAlternating_ιMulti, LinearMap.comp_id, ContinuousLinearMap.coe_coe]
+)
+(by ext f x
+    unfold liftContinuousAlternating liftContinuousAlternating_invFun ιMulti_continuous
+      AlternatingMap.mkContinuousAlternating
+    simp only [LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk, Function.comp_apply,
+      ContinuousLinearMap.compContinuousAlternatingMap_coe, ContinuousLinearMap.coe_mk',
+      ContinuousAlternatingMap.coe_mk, AlternatingMap.coe_mk, AlternatingMap.coe_multilinearMap,
+      liftAlternating_apply_ιMulti, ContinuousAlternatingMap.coe_coe, LinearMap.id_coe, id_eq]
+)
 
+noncomputable def liftContinuousAlternating_linearIsometry :
+(ContinuousAlternatingMap 𝕜 E 𝕜 (Fin r)) ≃ₛₗᵢ[RingHom.id 𝕜]
+(ExteriorPower 𝕜 E r →L[𝕜] 𝕜) := LinearIsometryEquiv.ofBounds (liftContinuousAlternating_equiv 𝕜 E r)
+(by intro f; unfold liftContinuousAlternating_equiv; simp only [LinearEquiv.ofLinear_apply]
+    exact liftContinuousAlternating_norm_le f
+)
+(by intro L; unfold liftContinuousAlternating_equiv; simp only [LinearEquiv.ofLinear_symm_apply]
+    exact liftContinuousAlternating_invFun_norm_le L
+)
 
 end SeparatingDual
 
