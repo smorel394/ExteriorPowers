@@ -405,20 +405,25 @@ linearFormOfBasis R n b hs (ιMulti_family R n b ⟨t, ht⟩) = 0 := by
   simp only [Finset.coe_orderIsoOfFin_apply, ne_eq] at hi
   simp only [Finset.coe_orderIsoOfFin_apply, Ne.symm hi, ite_false]
 
+lemma ιMulti_family_linearIndependent_ofBasis {I : Type*}
+[LinearOrder I] (b : Basis I R M) :
+LinearIndependent R (ιMulti_family R n b) := by
+  apply linearIndependent_of_dualFamily R _
+      (fun s => linearFormOfBasis R n b s.2)
+  . intro ⟨s, hs⟩ ⟨t, ht⟩ hst
+    simp only [ne_eq, Subtype.mk.injEq] at hst
+    simp only [Function.comp_apply]
+    apply linearFormOfBasis_apply_nondiag
+    exact hst
+  . intro ⟨s, hs⟩
+    simp only [Function.comp_apply]
+    apply linearFormOfBasis_apply_diag
+
 
 noncomputable def BasisOfBasis {I : Type*} [LinearOrder I] (b : Basis I R M) :
 Basis {s : Finset I // Finset.card s = n} R (ExteriorPower R M n) := by
   apply Basis.mk (v := ιMulti_family R n b)
-  . apply linearIndependent_of_dualFamily R _
-      (fun s => linearFormOfBasis R n b s.2)
-    . intro ⟨s, hs⟩ ⟨t, ht⟩ hst
-      simp only [ne_eq, Subtype.mk.injEq] at hst
-      simp only [Function.comp_apply]
-      apply linearFormOfBasis_apply_nondiag
-      exact hst
-    . intro ⟨s, hs⟩
-      simp only [Function.comp_apply]
-      apply linearFormOfBasis_apply_diag
+  . apply ιMulti_family_linearIndependent_ofBasis
   . rw [span_of_span']
     rw [Basis.span_eq]
 
@@ -592,12 +597,19 @@ Function.Surjective (map n f) := by
   simp only [Function.comp_apply]
   exact Classical.choose_spec (hf (y i))
 
+/- Two results that only work over a field.-/
+
 variable {K E F: Type*} [Field K] [AddCommGroup E]
   [Module K E] [AddCommGroup F] [Module K F] (n : ℕ)
 
 lemma map_injective_field {f : E →ₗ[K] F} (hf : LinearMap.ker f = ⊥) :
 Function.Injective (map n f) :=
 map_injective n (LinearMap.exists_leftInverse_of_injective f hf)
+
+
+lemma ιMulti_family_linearIndependent_field {I : Type*} [LinearOrder I] {v : I → E}
+(hv : LinearIndependent K v) :
+LinearIndependent K (ιMulti_family K n v) := by sorry
 
 
 /- Every element of ExteriorPower R M n is in the image of ExteriorPower R P n, for some finitely generated submodule

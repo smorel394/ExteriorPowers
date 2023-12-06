@@ -2,6 +2,7 @@ import Mathlib.Tactic
 import ExteriorPowers.Grassmannian
 import Mathlib.Analysis.NormedSpace.HahnBanach.SeparatingDual
 import Mathlib.Algebra.Module.Projective
+import Mathlib.Analysis.NormedSpace.Dual
 
 
 open Classical
@@ -101,7 +102,7 @@ variable (𝕜 E)
 /- TODO: reformulate this so it doesn't mention the Grassmannian.
 "For every finite-dimensional subspace W, there exists f..."
 Not clear that this is a good idea, because then we get a continuous linear map
-into (Fin finrank W) → 𝕜, which is more unwieldfy.
+into (Fin finrank W) → 𝕜, which is more unwieldy.
 -/
 def SeparatingMaps (r : ℕ) : Prop := ∀ (W : Grassmannian 𝕜 E r), ∃ (f : E →L[𝕜] (Fin r → 𝕜)),
 (W.1 ⊓ (LinearMap.ker f) = ⊥)
@@ -253,5 +254,37 @@ lemma SeparatingMaps.ofSeparatingDual (hsep : SeparatingDual 𝕜 E) :
 
 end Topology
 
+/-Come back to this later.
+section StronglySeparatingDual
+
+variable {𝕜 E F G : Type*} [NontriviallyNormedField 𝕜] [SeminormedAddCommGroup E] [NormedSpace 𝕜 E]
+[NormedAddCommGroup F] [NormedSpace 𝕜 F] [NormedAddCommGroup G] [NormedSpace 𝕜 G]
+[CompleteSpace 𝕜]
+
+variable (𝕜 E)
+
+class StronglySeparatingDual : Prop :=
+  /- The map from E into its double dual is an isometry. Note that we already have one of the inequalities,
+  by NormedSpace.double_dual_bound. -/
+  inclusion_norm_ge : ∀ (x : E), ‖x‖ ≤ ‖NormedSpace.inclusionInDoubleDual 𝕜 E x‖
+
+variable {𝕜 E}
+
+lemma StronglySeparatingDual.inclusion_norm_eq (hsep : StronglySeparatingDual 𝕜 E) (x : E) :
+‖x‖ = ‖NormedSpace.inclusionInDoubleDual 𝕜 E x‖ := sorry
+
+def SepararingDual.ofSronglySeparatingDual (hsep : StronglySeparatingDual 𝕜 F) :
+SeparatingDual 𝕜 F :=
+{exists_ne_zero' := by
+  intro x
+  contrapose!
+  intro hx
+  rw [←norm_eq_zero, StronglySeparatingDual.inclusion_norm_eq hsep]
+
+}
+
+
+end StronglySeparatingDual
+-/
 
 end
