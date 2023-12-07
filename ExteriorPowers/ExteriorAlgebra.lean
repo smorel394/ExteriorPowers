@@ -14,6 +14,70 @@ variable [CommRing R] [AddCommGroup M]
   [Module R M] [AddCommGroup N] [Module R N]
   [AddCommGroup N'] [Module R N'] (n : ℕ)
 
+-- Functoriality
+
+def map (f : M →ₗ[R] N) : ExteriorAlgebra R M →ₐ[R] ExteriorAlgebra R N :=
+CliffordAlgebra.map {f with map_app' := by intro _; simp only [AddHom.toFun_eq_coe,
+LinearMap.coe_toAddHom, QuadraticForm.zero_apply]}
+
+@[simp]
+theorem map_comp_ι (f : M →ₗ[R] N) :
+LinearMap.comp (AlgHom.toLinearMap (map f)) (ι R) =
+LinearMap.comp (ι R) f := CliffordAlgebra.map_comp_ι _
+
+@[simp]
+theorem map_apply_ι (f : M →ₗ[R] N) (m : M) :
+(map f) ((ι R) m) = (ι R) (f m) :=
+CliffordAlgebra.map_apply_ι _ m
+
+@[simp]
+theorem map_apply_ιMulti (f : M →ₗ[R] N) (m : Fin n → M) :
+(map f) ((ιMulti R n) m) = (ιMulti R n) (f ∘ m) := by
+  rw [ιMulti_apply, ιMulti_apply, map_list_prod]
+  simp only [List.map_ofFn, Function.comp_apply]
+  apply congrArg; apply congrArg
+  ext i
+  simp only [Function.comp_apply, map_apply_ι]
+
+
+@[simp]
+theorem map_comp_ιMulti (f : M →ₗ[R] N) :
+(map f).toLinearMap.compAlternatingMap (ιMulti R n (M := M)) =
+(ιMulti R n (M := N)).compLinearMap f := by
+  ext m
+  simp only [LinearMap.compAlternatingMap_apply, AlgHom.toLinearMap_apply, map_apply_ιMulti, Function.comp_apply,
+    AlternatingMap.compLinearMap_apply]
+  apply congrArg
+  ext i
+  simp only [Function.comp_apply]
+
+
+@[simp]
+theorem map_id :
+map (LinearMap.id) = AlgHom.id R (ExteriorAlgebra R M) :=
+CliffordAlgebra.map_id 0
+
+@[simp]
+theorem map_comp_map (f : M →ₗ[R] N) (g : N →ₗ[R] N') :
+AlgHom.comp (map g) (map f) = map (LinearMap.comp g f) := by
+  unfold map
+  rw [CliffordAlgebra.map_comp_map]
+  apply congrArg
+  ext m
+  simp only [QuadraticForm.Isometry.comp_apply]
+  change g (f m) = (LinearMap.comp g f) m
+  simp only [LinearMap.coe_comp, Function.comp_apply]
+
+
+@[simp]
+theorem ι_range_map_map (f : M →ₗ[R] N) :
+Submodule.map (AlgHom.toLinearMap (map f)) (LinearMap.range (ι R (M := M))) =
+Submodule.map (ι R) (LinearMap.range f) :=
+CliffordAlgebra.ι_range_map_map _
+
+
+
+
 variable (R)
 
 lemma ιMulti_range : Set.range (ιMulti R n) ⊆
@@ -77,69 +141,9 @@ noncomputable def ιMulti_family {I : Type*} [LinearOrder I] (v : I → M) :
   have e := Finset.orderIsoOfFin s hs
   exact ιMulti R n (fun i => v (e i))
 
--- Functoriality
+
 
 variable {R}
-
-def map (f : M →ₗ[R] N) : ExteriorAlgebra R M →ₐ[R] ExteriorAlgebra R N :=
-CliffordAlgebra.map {f with map_app' := by intro _; simp only [AddHom.toFun_eq_coe,
-LinearMap.coe_toAddHom, QuadraticForm.zero_apply]}
-
-@[simp]
-theorem map_comp_ι (f : M →ₗ[R] N) :
-LinearMap.comp (AlgHom.toLinearMap (map f)) (ι R) =
-LinearMap.comp (ι R) f := CliffordAlgebra.map_comp_ι _
-
-@[simp]
-theorem map_apply_ι (f : M →ₗ[R] N) (m : M) :
-(map f) ((ι R) m) = (ι R) (f m) :=
-CliffordAlgebra.map_apply_ι _ m
-
-@[simp]
-theorem map_apply_ιMulti (f : M →ₗ[R] N) (m : Fin n → M) :
-(map f) ((ιMulti R n) m) = (ιMulti R n) (f ∘ m) := by
-  rw [ιMulti_apply, ιMulti_apply, map_list_prod]
-  simp only [List.map_ofFn, Function.comp_apply]
-  apply congrArg; apply congrArg
-  ext i
-  simp only [Function.comp_apply, map_apply_ι]
-
-
-@[simp]
-theorem map_comp_ιMulti (f : M →ₗ[R] N) :
-(map f).toLinearMap.compAlternatingMap (ιMulti R n (M := M)) =
-(ιMulti R n (M := N)).compLinearMap f := by
-  ext m
-  simp only [LinearMap.compAlternatingMap_apply, AlgHom.toLinearMap_apply, map_apply_ιMulti, Function.comp_apply,
-    AlternatingMap.compLinearMap_apply]
-  apply congrArg
-  ext i
-  simp only [Function.comp_apply]
-
-
-@[simp]
-theorem map_id :
-map (LinearMap.id) = AlgHom.id R (ExteriorAlgebra R M) :=
-CliffordAlgebra.map_id 0
-
-@[simp]
-theorem map_comp_map (f : M →ₗ[R] N) (g : N →ₗ[R] N') :
-AlgHom.comp (map g) (map f) = map (LinearMap.comp g f) := by
-  unfold map
-  rw [CliffordAlgebra.map_comp_map]
-  apply congrArg
-  ext m
-  simp only [QuadraticForm.Isometry.comp_apply]
-  change g (f m) = (LinearMap.comp g f) m
-  simp only [LinearMap.coe_comp, Function.comp_apply]
-
-
-@[simp]
-theorem ι_range_map_map (f : M →ₗ[R] N) :
-Submodule.map (AlgHom.toLinearMap (map f)) (LinearMap.range (ι R (M := M))) =
-Submodule.map (ι R) (LinearMap.range f) :=
-CliffordAlgebra.ι_range_map_map _
-
 
 lemma map_injective {f : M →ₗ[R] N} (hf : ∃ (g : N →ₗ[R] M), g.comp f = LinearMap.id) :
 Function.Injective (map f) := by

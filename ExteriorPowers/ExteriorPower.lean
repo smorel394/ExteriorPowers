@@ -10,9 +10,13 @@ variable [CommRing R] [AddCommGroup M]
   [Module R M] [AddCommGroup N] [Module R N]
   [AddCommGroup N'] [Module R N'] (n : ℕ)
 
+-- Definition.
+
 abbrev ExteriorPower := (LinearMap.range (ExteriorAlgebra.ι R : M →ₗ[R] ExteriorAlgebra R M) ^ n)
 
 namespace ExteriorPower
+
+-- Finitiness.
 
 def Finite [Module.Finite R M]: Module.Finite R
 (ExteriorPower R M n) := by
@@ -26,6 +30,8 @@ def Finite [Module.Finite R M]: Module.Finite R
 
 
 variable {R M N N'}
+
+-- Universal property.
 
 def liftAlternating_aux : (AlternatingMap R M N (Fin n)) →ₗ[R]
 ((i : ℕ) → AlternatingMap R M N (Fin i)) := by
@@ -137,6 +143,93 @@ left_inv f := liftAlternating_comp_ιMulti R n f
 right_inv F := by ext u; simp only [liftAlternating_comp, liftAlternating_ιMulti, LinearMap.comp_id]
 
 
+-- Functoriality
+
+variable {R}
+
+def map (f : M →ₗ[R] N) : ExteriorPower R M n →ₗ[R] ExteriorPower R N n := by
+  refine LinearMap.restrict (AlgHom.toLinearMap (ExteriorAlgebra.map f)) ?_
+  intro x hx
+  rw [←ιMulti_span_fixedDegree] at hx ⊢
+  have hx := Set.mem_image_of_mem (ExteriorAlgebra.map f) hx
+  rw [←Submodule.map_coe, LinearMap.map_span, ←Set.range_comp] at hx
+  erw [←(LinearMap.coe_compAlternatingMap (ExteriorAlgebra.map f).toLinearMap (ExteriorAlgebra.ιMulti R n))] at hx
+  rw [ExteriorAlgebra.map_comp_ιMulti, AlternatingMap.coe_compLinearMap] at hx
+  refine Set.mem_of_mem_of_subset hx ?_
+  apply Submodule.span_mono
+  apply Set.range_comp_subset_range
+
+@[simp]
+theorem map_apply_ιMulti (f : M →ₗ[R] N) (m : Fin n → M) :
+(map n f) ((ιMulti R n) m) = (ιMulti R n) (f ∘ m) := by
+  unfold map
+  rw [LinearMap.restrict_apply]
+  rw [←SetCoe.ext_iff]
+  simp only
+  rw [ιMulti_apply]
+  erw [ExteriorAlgebra.map_apply_ιMulti, ιMulti_apply]
+
+@[simp]
+theorem map_comp_ιMulti (f : M →ₗ[R] N) :
+(map n f).compAlternatingMap (ιMulti R n (M := M)) = (ιMulti R n (M := N)).compLinearMap f := by
+  unfold map
+  ext m
+  simp only [LinearMap.compAlternatingMap_apply, LinearMap.restrict_coe_apply, ιMulti_apply,
+    AlgHom.toLinearMap_apply, ExteriorAlgebra.map_apply_ιMulti, Function.comp_apply, AlternatingMap.compLinearMap_apply]
+  apply congrArg
+  ext i
+  simp only [Function.comp_apply]
+
+@[simp]
+theorem map_id :
+map n (LinearMap.id) = LinearMap.id (R := R) (M := ExteriorPower R M n) := by
+  unfold map
+  ext m
+  simp only [map_id, AlgHom.toLinearMap_id, LinearMap.compAlternatingMap_apply, LinearMap.restrict_coe_apply,
+    ιMulti_apply, LinearMap.id_coe, id_eq]
+  rw [ExteriorAlgebra.map_id]
+  simp only [AlgHom.toLinearMap_id, LinearMap.id_coe, id_eq]
+
+@[simp]
+theorem map_comp_map (f : M →ₗ[R] N) (g : N →ₗ[R] N') :
+LinearMap.comp (map n g) (map n f) = map n (LinearMap.comp g f) := by
+  unfold map
+  ext m
+  simp only [LinearMap.compAlternatingMap_apply, LinearMap.coe_comp, Function.comp_apply, LinearMap.restrict_coe_apply,
+    ιMulti_apply, AlgHom.toLinearMap_apply, ExteriorAlgebra.map_apply_ιMulti]
+  rw [Function.comp.assoc]
+
+
+
+lemma map_injective {f : M →ₗ[R] N} (hf : ∃ (g : N →ₗ[R] M), g.comp f = LinearMap.id) :
+Function.Injective (map n f) := by
+  obtain ⟨g, hgf⟩ := hf
+  apply Function.RightInverse.injective (g := map n g)
+  intro m
+  rw [←LinearMap.comp_apply, map_comp_map, hgf, map_id]
+  simp only [LinearMap.id_coe, id_eq]
+
+
+lemma map_surjective {f : M →ₗ[R] N} (hf : Function.Surjective f) :
+Function.Surjective (map n f) := by
+  rw [←LinearMap.range_eq_top, LinearMap.range_eq_map, ←ιMulti_span, ←ιMulti_span,
+    Submodule.map_span, ←Set.range_comp, ←LinearMap.coe_compAlternatingMap, map_comp_ιMulti,
+    AlternatingMap.coe_compLinearMap, Set.range_comp]
+  apply congrArg
+  conv_rhs => rw [←Set.image_univ]
+  apply congrArg
+  rw [Set.range_iff_surjective]
+  intro y
+  existsi fun i => Classical.choose (hf (y i))
+  ext i
+  simp only [Function.comp_apply]
+  exact Classical.choose_spec (hf (y i))
+
+
+-- From a family of vectors of M to a family of vectors of its nth exterior power.
+
+variable (R)
+
 noncomputable def ιMulti_family {I : Type*} [LinearOrder I] (v : I → M) :
 {s : Finset I // Finset.card s = n} → ExteriorPower R M n :=
 fun ⟨s, hs⟩ => ιMulti R n (fun i => v (Finset.orderIsoOfFin s hs i))
@@ -148,7 +241,16 @@ ExteriorAlgebra.ιMulti_family R n v = (Submodule.subtype _) ∘ (ιMulti_family
   simp only [Submodule.coeSubtype, Finset.coe_orderIsoOfFin_apply, Function.comp_apply, ιMulti_apply]
   rfl
 
-lemma span_of_span {I : Type*} [LinearOrder I]
+
+lemma map_ιMulti_family {I : Type*} [LinearOrder I] (v : I → M) (f : M →ₗ[R] N) :
+(map n f) ∘ (ιMulti_family R n v) = ιMulti_family R n (f ∘ v) := by
+  ext ⟨s, hs⟩
+  unfold ιMulti_family
+  simp only [Finset.coe_orderIsoOfFin_apply, Function.comp_apply, map_apply_ιMulti, ιMulti_apply]
+  congr
+
+
+lemma span_top_of_span_top {I : Type*} [LinearOrder I]
 {v : I → M} (hv : Submodule.span R (Set.range v) = ⊤) :
 Submodule.span R (Set.range (ExteriorAlgebra.ιMulti_family R n v)) = ExteriorPower R M n := by
   apply le_antisymm
@@ -249,13 +351,14 @@ Submodule.span R (Set.range (ExteriorAlgebra.ιMulti_family R n v)) = ExteriorPo
       simp only [SetLike.mem_coe, Submodule.zero_mem]
 
 
-lemma span_of_span' {I : Type*} [LinearOrder I]
+
+lemma span_top_of_span_top' {I : Type*} [LinearOrder I]
 {v : I → M} (hv : Submodule.span R (Set.range v) = ⊤) :
 Submodule.span R  (Set.range (ιMulti_family R n v)) = ⊤ := by
   rw [eq_top_iff]
   intro ⟨u, hu⟩ _
   set hu' := hu
-  rw [←(span_of_span R n hv), ιMulti_family_coe,
+  rw [←(span_top_of_span_top R n hv), ιMulti_family_coe,
     Set.range_comp, ←Submodule.map_span, Submodule.mem_map] at hu'
   obtain ⟨v, hv, huv⟩ := hu'
   have heq : ⟨u, hu⟩ = v := by
@@ -265,6 +368,31 @@ Submodule.span R  (Set.range (ιMulti_family R n v)) = ⊤ := by
     exact (Eq.symm huv)
   rw [heq]
   exact hv
+
+lemma span_of_span {I : Type*} [LinearOrder I] (v : I → M) :
+LinearMap.range (map n (Submodule.subtype (Submodule.span R (Set.range v)))) =
+  Submodule.span R (Set.range (ιMulti_family R n v)) := by
+  set w : I → Submodule.span R (Set.range v) :=
+    fun i => ⟨v i, by apply Submodule.subset_span; simp only [Set.mem_range,
+      exists_apply_eq_apply]⟩
+  rw [LinearMap.range_eq_map, ←(span_top_of_span_top' (I := I) (R := R) (v := w)),
+    Submodule.map_span, ←Set.range_comp]
+  . congr; apply congrArg
+    rw [map_ιMulti_family]
+    congr
+  . ext ⟨x, hx⟩
+    simp only [Submodule.mem_top, iff_true]
+    rw [Finsupp.mem_span_range_iff_exists_finsupp] at hx ⊢
+    obtain ⟨c, hcx⟩ := hx
+    existsi c
+    rw [←SetCoe.ext_iff]
+    simp only [SetLike.mk_smul_mk]
+    change Submodule.subtype _ _ = x
+    erw [map_sum]
+    simp only [Submodule.coeSubtype]
+    exact hcx
+
+
 
 variable (M)
 
@@ -314,6 +442,28 @@ linearFormOfFamily R n f (ιMulti R n m) = Finset.sum Finset.univ (fun (σ : Equ
 Finset.prod Finset.univ (fun (i : Fin n) => f i (m (σ i)))) := by
   simp only [linearFormOfFamily_apply, toTensorPower_apply_ιMulti, map_sum,
     LinearMap.map_smul_of_tower, TensorPower_linearFormOfFamily_apply_tprod]
+
+
+
+lemma linearFormOfFamily_compExteriorPowerMap (f : (i : Fin n) → (M →ₗ[R] R))
+(p : N →ₗ[R] M) :
+LinearMap.comp (linearFormOfFamily R n f) (ExteriorPower.map n p) =
+linearFormOfFamily R n (fun (i : Fin n) => (f i).comp p) := by
+  apply LinearMap.ext_on (ιMulti_span R n (M :=N))
+  intro x hx
+  rw [Set.mem_range] at hx
+  obtain ⟨y, h⟩ := hx
+  rw [←h]
+  simp only [LinearMap.coe_comp, Function.comp_apply, map_apply_ιMulti, linearFormOfFamily_apply,
+    toTensorPower_apply_ιMulti, map_sum, LinearMap.map_smul_of_tower,
+    TensorPower_linearFormOfFamily_apply_tprod]
+
+
+lemma linearFormOfFamily_compExteriorPowerMap_apply (f : (i : Fin n) → (M →ₗ[R] R))
+(p : N →ₗ[R] M) (x : ExteriorPower R N n) :
+(linearFormOfFamily R n f) (ExteriorPower.map n p x) =
+linearFormOfFamily R n (fun (i : Fin n) => (f i).comp p) x := by
+  rw [←LinearMap.comp_apply, linearFormOfFamily_compExteriorPowerMap]
 
 
 noncomputable def alternatingFormOfFamily (f : (i : Fin n) → (M →ₗ[R] R)) :
@@ -424,7 +574,7 @@ noncomputable def BasisOfBasis {I : Type*} [LinearOrder I] (b : Basis I R M) :
 Basis {s : Finset I // Finset.card s = n} R (ExteriorPower R M n) := by
   apply Basis.mk (v := ιMulti_family R n b)
   . apply ιMulti_family_linearIndependent_ofBasis
-  . rw [span_of_span']
+  . rw [span_top_of_span_top']
     rw [Basis.span_eq]
 
 lemma BasisOfBasis_coe {I : Type*} [LinearOrder I] (b : Basis I R M) :
@@ -438,7 +588,7 @@ BasisOfBasis R n b ⟨s, hs⟩ = ιMulti_family R n b ⟨s, hs⟩ := by
 lemma BasisOfBasis_coord {I : Type*} [LinearOrder I] (b : Basis I R M)
 {s : Finset I} (hs : Finset.card s = n) :
 Basis.coord (BasisOfBasis R n b) ⟨s, hs⟩ = linearFormOfBasis R n b hs := by
-  apply LinearMap.ext_on (ExteriorPower.span_of_span' R n (Basis.span_eq b))
+  apply LinearMap.ext_on (span_top_of_span_top' R n (Basis.span_eq b))
   intro x hx
   rw [Set.mem_range] at hx
   obtain ⟨⟨t, ht⟩, htx⟩ := hx
@@ -495,107 +645,6 @@ n > 0 → FiniteDimensional.finrank R (ExteriorAlgebra.GradedPiece R M n) = 0 :=
   rw [h]; simp only [gt_iff_lt, implies_true]
 -/
 
--- Functoriality
-
-variable {R}
-
-def map (f : M →ₗ[R] N) : ExteriorPower R M n →ₗ[R] ExteriorPower R N n := by
-  refine LinearMap.restrict (AlgHom.toLinearMap (ExteriorAlgebra.map f)) ?_
-  intro x hx
-  rw [←ιMulti_span_fixedDegree] at hx ⊢
-  have hx := Set.mem_image_of_mem (ExteriorAlgebra.map f) hx
-  rw [←Submodule.map_coe, LinearMap.map_span, ←Set.range_comp] at hx
-  erw [←(LinearMap.coe_compAlternatingMap (ExteriorAlgebra.map f).toLinearMap (ExteriorAlgebra.ιMulti R n))] at hx
-  rw [ExteriorAlgebra.map_comp_ιMulti, AlternatingMap.coe_compLinearMap] at hx
-  refine Set.mem_of_mem_of_subset hx ?_
-  apply Submodule.span_mono
-  apply Set.range_comp_subset_range
-
-@[simp]
-theorem map_apply_ιMulti (f : M →ₗ[R] N) (m : Fin n → M) :
-(map n f) ((ιMulti R n) m) = (ιMulti R n) (f ∘ m) := by
-  unfold map
-  rw [LinearMap.restrict_apply]
-  rw [←SetCoe.ext_iff]
-  simp only
-  rw [ιMulti_apply]
-  erw [ExteriorAlgebra.map_apply_ιMulti, ιMulti_apply]
-
-@[simp]
-theorem map_comp_ιMulti (f : M →ₗ[R] N) :
-(map n f).compAlternatingMap (ιMulti R n (M := M)) = (ιMulti R n (M := N)).compLinearMap f := by
-  unfold map
-  ext m
-  simp only [LinearMap.compAlternatingMap_apply, LinearMap.restrict_coe_apply, ιMulti_apply,
-    AlgHom.toLinearMap_apply, ExteriorAlgebra.map_apply_ιMulti, Function.comp_apply, AlternatingMap.compLinearMap_apply]
-  apply congrArg
-  ext i
-  simp only [Function.comp_apply]
-
-@[simp]
-theorem map_id :
-map n (LinearMap.id) = LinearMap.id (R := R) (M := ExteriorPower R M n) := by
-  unfold map
-  ext m
-  simp only [map_id, AlgHom.toLinearMap_id, LinearMap.compAlternatingMap_apply, LinearMap.restrict_coe_apply,
-    ιMulti_apply, LinearMap.id_coe, id_eq]
-  rw [ExteriorAlgebra.map_id]
-  simp only [AlgHom.toLinearMap_id, LinearMap.id_coe, id_eq]
-
-@[simp]
-theorem map_comp_map (f : M →ₗ[R] N) (g : N →ₗ[R] N') :
-LinearMap.comp (map n g) (map n f) = map n (LinearMap.comp g f) := by
-  unfold map
-  ext m
-  simp only [LinearMap.compAlternatingMap_apply, LinearMap.coe_comp, Function.comp_apply, LinearMap.restrict_coe_apply,
-    ιMulti_apply, AlgHom.toLinearMap_apply, ExteriorAlgebra.map_apply_ιMulti]
-  rw [Function.comp.assoc]
-
-
-lemma linearFormOfFamily_compExteriorPowerMap (f : (i : Fin n) → (M →ₗ[R] R))
-(p : N →ₗ[R] M) :
-LinearMap.comp (linearFormOfFamily R n f) (ExteriorPower.map n p) =
-linearFormOfFamily R n (fun (i : Fin n) => (f i).comp p) := by
-  apply LinearMap.ext_on (ιMulti_span R n (M :=N))
-  intro x hx
-  rw [Set.mem_range] at hx
-  obtain ⟨y, h⟩ := hx
-  rw [←h]
-  simp only [LinearMap.coe_comp, Function.comp_apply, map_apply_ιMulti, linearFormOfFamily_apply,
-    toTensorPower_apply_ιMulti, map_sum, LinearMap.map_smul_of_tower,
-    TensorPower_linearFormOfFamily_apply_tprod]
-
-
-lemma linearFormOfFamily_compExteriorPowerMap_apply (f : (i : Fin n) → (M →ₗ[R] R))
-(p : N →ₗ[R] M) (x : ExteriorPower R N n) :
-(linearFormOfFamily R n f) (ExteriorPower.map n p x) =
-linearFormOfFamily R n (fun (i : Fin n) => (f i).comp p) x := by
-  rw [←LinearMap.comp_apply, linearFormOfFamily_compExteriorPowerMap]
-
-
-lemma map_injective {f : M →ₗ[R] N} (hf : ∃ (g : N →ₗ[R] M), g.comp f = LinearMap.id) :
-Function.Injective (map n f) := by
-  obtain ⟨g, hgf⟩ := hf
-  apply Function.RightInverse.injective (g := map n g)
-  intro m
-  rw [←LinearMap.comp_apply, map_comp_map, hgf, map_id]
-  simp only [LinearMap.id_coe, id_eq]
-
-
-lemma map_surjective {f : M →ₗ[R] N} (hf : Function.Surjective f) :
-Function.Surjective (map n f) := by
-  rw [←LinearMap.range_eq_top, LinearMap.range_eq_map, ←ιMulti_span, ←ιMulti_span,
-    Submodule.map_span, ←Set.range_comp, ←LinearMap.coe_compAlternatingMap, map_comp_ιMulti,
-    AlternatingMap.coe_compLinearMap, Set.range_comp]
-  apply congrArg
-  conv_rhs => rw [←Set.image_univ]
-  apply congrArg
-  rw [Set.range_iff_surjective]
-  intro y
-  existsi fun i => Classical.choose (hf (y i))
-  ext i
-  simp only [Function.comp_apply]
-  exact Classical.choose_spec (hf (y i))
 
 /- Two results that only work over a field.-/
 
@@ -614,6 +663,8 @@ LinearIndependent K (ιMulti_family K n v) := by sorry
 
 /- Every element of ExteriorPower R M n is in the image of ExteriorPower R P n, for some finitely generated submodule
 P of M.-/
+
+variable {R}
 
 lemma range_ExteriorPower_submodule_le {P Q : Submodule R M} (hPQ : P ≤ Q) :
 LinearMap.range (map n (Submodule.subtype P)) ≤ LinearMap.range (map n (Submodule.subtype Q)) := by
