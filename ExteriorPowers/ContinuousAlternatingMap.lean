@@ -81,6 +81,13 @@ ContinuousMultilinearMap R (fun (_ : ι) => M) N :=
 {m.toAlternatingMap.toMultilinearMap with
  cont := m.cont}
 
+@[simp]
+lemma toContinuousMultilinearMap_apply (m : ContinuousAlternatingMap R M N ι)
+(v : ι → M) :
+m.toContinuousMultilinearMap v = m v := by
+  unfold toContinuousMultilinearMap
+  simp only [MultilinearMap.toFun_eq_coe, AlternatingMap.coe_multilinearMap]
+  rfl
 
 lemma toContinuousMultilinearMap_injective :
 Function.Injective (ContinuousAlternatingMap.toContinuousMultilinearMap (R := R) (M := M) (N := N) (ι := ι)) := by
@@ -518,5 +525,12 @@ theorem coe_mkContinuousAlternating (f : AlternatingMap 𝕜 E F ι) (C : ℝ)
 (H : ∀ (m : ι → E), ‖f m‖ ≤ C * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)) :
 (AlternatingMap.mkContinuousAlternating f C H).toAlternatingMap = f :=
   rfl
+
+@[simp]
+lemma mkContinuousAlternating_apply (f : AlternatingMap 𝕜 E F ι) (C : ℝ)
+(H : ∀ (m : ι → E), ‖f m‖ ≤ C * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)) (v : ι → E) :
+mkContinuousAlternating f C H v = f v := by
+  unfold mkContinuousAlternating
+  simp only [ContinuousAlternatingMap.coe_mk, coe_mk, coe_multilinearMap]
 
 end AlternatingMap

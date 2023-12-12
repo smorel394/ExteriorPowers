@@ -215,7 +215,7 @@ lemma SmoothAt.mapFromGrassmannian {F : Type*} [NormedAddCommGroup F] [NormedSpa
     exact hf
   . apply ContMDiffAt.comp (E' := (Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r)) (I' := modelWithCornersSelf 𝕜
       ((Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r)))
-    . rw [ContMDiffAT_vs_openEmbedding (modelWithCornersSelf 𝕜 ((Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r)))
+    . rw [ContMDiffAt_vs_openEmbedding (modelWithCornersSelf 𝕜 ((Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r)))
         (LinearIndependentToAll 𝕜 E (Fin r)) (InverseChartLift_codRestrict φ)]
       have heq : (fun v => v.1) ∘ InverseChartLift_codRestrict φ = InverseChartLift φ := by
         apply funext; intro f
@@ -321,7 +321,7 @@ ContMDiffAt (ModelWithCorners.prod I' (ModelGrassmannian 𝕜 (ModelSpace 𝕜 E
     . apply contMDiffAt_id
     . apply ContMDiffAt.comp (E' := (Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r)) (I' := modelWithCornersSelf 𝕜
       ((Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r)))
-      . rw [ContMDiffAT_vs_openEmbedding (modelWithCornersSelf 𝕜 ((Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r)))
+      . rw [ContMDiffAt_vs_openEmbedding (modelWithCornersSelf 𝕜 ((Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r)))
           (LinearIndependentToAll 𝕜 E (Fin r)) (InverseChartLift_codRestrict φ)]
         have heq : (fun v => v.1) ∘ InverseChartLift_codRestrict φ = InverseChartLift φ := by
           apply funext; intro f

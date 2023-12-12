@@ -52,16 +52,47 @@ variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E
 
 variable (𝕜 E)
 
-variable [Nonempty {v : {s : Finset (Fin r) // Finset.card s = n} → ExteriorPower 𝕜 E n // LinearIndependent 𝕜 v}]
-variable [SeparatingDual 𝕜 (ExteriorPower 𝕜 E n)]
+local instance instNonemptyLI : Nonempty {v : {s : Finset (Fin r) // Finset.card s = n}
+  → ExteriorPower 𝕜 E n // LinearIndependent 𝕜 v} := by
+  apply ExteriorPower.NonemptyOfNonempty
+  rw [NonemptyGrassmannian_iff']
+  exact inferInstance
 
 local instance instNonEmptyGrass2 : Nonempty (Grassmannian 𝕜 (ExteriorPower 𝕜 E n) (Nat.choose r n)) :=
 (NonemptyGrassmannian_iff 𝕜 (ExteriorPower 𝕜 E n) (I := {s : Finset (Fin r) // Finset.card s = n})
   (r := Nat.choose r n) (by rw [Fintype.card_finset_len, Fintype.card_fin])).mp inferInstance
 
+variable [SeparatingDual 𝕜 (ExteriorPower 𝕜 E n)]
+
 lemma Smooth.pluckerMapLift : ContMDiff (modelWithCornersSelf 𝕜 (Fin r → E))
 (modelWithCornersSelf 𝕜 ({s : Finset (Fin r) // Finset.card s = n} → (ExteriorPower 𝕜 E n)))
-⊤ (PluckerMapLift 𝕜 E r n) := sorry
+⊤ (PluckerMapLift 𝕜 E r n) := by
+  rw [ContMDiff_vs_openEmbedding]
+  have heq : (fun v => v.1) ∘ (PluckerMapLift 𝕜 E r n) = (PluckerMapLift_extended 𝕜 n) ∘ (fun v => v.1) := by
+    ext v
+    unfold PluckerMapLift
+    simp only [Function.comp_apply]
+  rw [heq]
+  refine ContMDiff.comp (E' := Fin r → E) (I' := modelWithCornersSelf 𝕜 (Fin r → E)) ?_
+    (contMDiffOpenEmbedding _)
+  rw [contMDiff_pi_space]
+  intro ⟨s, hs⟩
+  have heq : (fun v => PluckerMapLift_extended 𝕜 n v ⟨s, hs⟩) =
+    (ExteriorPower.ιMulti_continuous (E := E) (𝕜 := 𝕜) (r := n)).toContinuousMultilinearMap.toFun ∘
+    (fun v => (fun i => v (Finset.orderIsoOfFin s hs i))) := by
+    ext v
+    unfold PluckerMapLift_extended ExteriorPower.ιMulti_family
+    simp only [Finset.coe_orderIsoOfFin_apply, ExteriorPower.ιMulti_apply,
+      MultilinearMap.toFun_eq_coe, ContinuousMultilinearMap.coe_coe, Function.comp_apply,
+      ContinuousAlternatingMap.toContinuousMultilinearMap_apply,
+      ExteriorPower.ιMulti_continuous_apply]
+  rw [heq, contMDiff_iff_contDiff]
+  refine ContDiff.comp ?_ ?_
+  . apply ContinuousMultilinearMap.contDiff
+  . rw [contDiff_pi]
+    intro i
+    apply contDiff_apply
+
 
 lemma Smooth.pluckerMap : ContMDiff (ModelGrassmannian 𝕜 (ModelSpace 𝕜 E r) r)
 (ModelGrassmannian 𝕜 (ModelSpace 𝕜 (ExteriorPower 𝕜 E n) (Nat.choose r n)) (Nat.choose r n)) ⊤

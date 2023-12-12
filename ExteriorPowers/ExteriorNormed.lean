@@ -137,6 +137,12 @@ def ιMulti_continuous : ContinuousAlternatingMap 𝕜 E (ExteriorPower 𝕜 E r
 AlternatingMap.mkContinuousAlternating (𝕜 := 𝕜) (E := E) (F := ExteriorPower 𝕜 E r) (ι := Fin r) (ιMulti 𝕜 r (M := E)) 1
 (by intro (m : Fin r → E); rw [one_mul]; exact SeminormExteriorPower_apply_ιMulti_le (𝕜 := 𝕜) m)
 
+@[simp]
+lemma ιMulti_continuous_apply (v : Fin r → E) :
+ιMulti_continuous v = ιMulti 𝕜 r v := by
+  unfold ιMulti_continuous
+  rw [AlternatingMap.mkContinuousAlternating_apply]
+
 /- This is trivial from what we already did, but I can't state it yet because ContinuousAlternatingMap doesn't
 have a morm unless the origin space is normed and not just semi-normed. So we put this lemma and
 the following in ExteriorNormedSeparatingDual.lean for now.-/

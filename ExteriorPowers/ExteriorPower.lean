@@ -234,13 +234,13 @@ noncomputable def ιMulti_family {I : Type*} [LinearOrder I] (v : I → M) :
 {s : Finset I // Finset.card s = n} → ExteriorPower R M n :=
 fun ⟨s, hs⟩ => ιMulti R n (fun i => v (Finset.orderIsoOfFin s hs i))
 
+@[simp]
 lemma ιMulti_family_coe {I : Type*} [LinearOrder I] (v : I → M) :
 ExteriorAlgebra.ιMulti_family R n v = (Submodule.subtype _) ∘ (ιMulti_family R n v) := by
   ext s
   unfold ιMulti_family
   simp only [Submodule.coeSubtype, Finset.coe_orderIsoOfFin_apply, Function.comp_apply, ιMulti_apply]
   rfl
-
 
 lemma map_ιMulti_family {I : Type*} [LinearOrder I] (v : I → M) (f : M →ₗ[R] N) :
 (map n f) ∘ (ιMulti_family R n v) = ιMulti_family R n (f ∘ v) := by
@@ -577,9 +577,11 @@ Basis {s : Finset I // Finset.card s = n} R (ExteriorPower R M n) := by
   . rw [span_top_of_span_top']
     rw [Basis.span_eq]
 
+@[simp]
 lemma BasisOfBasis_coe {I : Type*} [LinearOrder I] (b : Basis I R M) :
 FunLike.coe (BasisOfBasis R n b) = ιMulti_family R n b := Basis.coe_mk _ _
 
+@[simp]
 lemma BasisOfBasis_apply {I : Type*} [LinearOrder I] (b : Basis I R M)
 {s : Finset I} (hs : Finset.card s = n) :
 BasisOfBasis R n b ⟨s, hs⟩ = ιMulti_family R n b ⟨s, hs⟩ := by
@@ -658,7 +660,39 @@ map_injective n (LinearMap.exists_leftInverse_of_injective f hf)
 
 lemma ιMulti_family_linearIndependent_field {I : Type*} [LinearOrder I] {v : I → E}
 (hv : LinearIndependent K v) :
-LinearIndependent K (ιMulti_family K n v) := by sorry
+LinearIndependent K (ιMulti_family K n v) := by
+  set W := Submodule.span K (Set.range v)
+  set v' : I → W := fun i => ⟨v i, by apply Submodule.subset_span; simp only [Set.mem_range,
+    exists_apply_eq_apply]⟩
+  set f := Submodule.subtype W
+  have hvv' : v = f ∘ v' := by
+    ext i
+    simp only [Submodule.coeSubtype, Function.comp_apply]
+  have hv' : LinearIndependent K (ιMulti_family K n v') := by
+    have hv'li : LinearIndependent K v' := by
+      apply LinearIndependent.of_comp f; rw [←hvv']; exact hv
+    have hv'span : ⊤ ≤ Submodule.span K (Set.range v') := by
+      simp only [top_le_iff]
+      ext x
+      simp only [Submodule.mem_top, iff_true]
+      rw [←(Submodule.apply_mem_span_image_iff_mem_span (Submodule.injective_subtype W)), ←Set.range_comp, ←hvv']
+      simp only [Submodule.coeSubtype, SetLike.coe_mem]
+    set B := BasisOfBasis K n (Basis.mk hv'li hv'span)
+    have heq : ιMulti_family K n v' = B := by
+      simp only [BasisOfBasis_coe, Basis.coe_mk]
+    rw [heq]
+    exact Basis.linearIndependent B
+  rw [hvv', ←map_ιMulti_family]
+  apply LinearIndependent.map' hv'
+  rw [LinearMap.ker_eq_bot]
+  apply map_injective_field
+  simp only [Submodule.ker_subtype]
+
+
+lemma NonemptyOfNonempty {I : Type*} [LinearOrder I] (hne : Nonempty {v : I → E // LinearIndependent K v}) :
+Nonempty {v : {s : Finset I // Finset.card s = n} → ExteriorPower K E n // LinearIndependent K v} := by
+  set v := Classical.choice hne
+  exact Nonempty.intro ⟨ιMulti_family K n v, ιMulti_family_linearIndependent_field n v.2⟩
 
 
 /- Every element of ExteriorPower R M n is in the image of ExteriorPower R P n, for some finitely generated submodule
