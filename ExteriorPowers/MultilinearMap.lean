@@ -1,13 +1,12 @@
 import Mathlib.Tactic
 import Mathlib.LinearAlgebra.Multilinear.Basic
 
-open Classical
 
 namespace MultilinearMap
 
 variable {R : Type uR} [Semiring R]  {ι : Type uι} {M : ι → Type v} {N : Type w}
 [∀ (i : ι), AddCommGroup (M i)] [AddCommGroup N] [∀ (i : ι), Module R (M i)]
-[Module R N] {n : ℕ}
+[Module R N] {n : ℕ} [DecidableEq ι]
 
 lemma apply_sub [LinearOrder ι]
 (f : MultilinearMap R M N) (a b v : (i : ι) → (M i)) (s : Finset ι)
