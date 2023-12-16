@@ -11,7 +11,6 @@ open Topology NNReal Asymptotics ENNReal
 open NormedField
 
 
-namespace ContinuousMultilinearMap
 
 
 variable {𝕜 : Type u_1} [NontriviallyNormedField 𝕜] {ι : Type v} [Fintype ι]
@@ -19,12 +18,198 @@ variable {𝕜 : Type u_1} [NontriviallyNormedField 𝕜] {ι : Type v} [Fintype
 [(i : ι) → NormedAddCommGroup (E i)] [NormedAddCommGroup F] [(i : ι) → NormedSpace 𝕜 (E i)]
 [NormedSpace 𝕜 F] [DecidableEq ι]
 
+variable (𝕜 E)
+
+def ContinuousLinearMap.embed (i : ι) :
+((j : (Finset.univ (α := ι).erase i)) → E j) →L[𝕜] ((i : ι) → E i) := by
+  apply ContinuousLinearMap.pi
+  intro j
+  by_cases h : j = i
+  . exact 0
+  . have hj : j ∈ (Finset.univ (α := ι).erase i) := by
+      simp only [Finset.mem_univ, not_true_eq_false, Finset.mem_erase, ne_eq, h,
+        not_false_eq_true, and_self]
+    exact ContinuousLinearMap.proj (⟨j, hj⟩ : (Finset.univ (α := ι).erase i))
+
+@[simp]
+lemma ContinuousLinearMap.embed_apply_same (i : ι) (x : ((j : (Finset.univ (α := ι).erase i)) → E j)) :
+ContinuousLinearMap.embed 𝕜 E i x i = 0 := by
+  unfold embed
+  simp only [coe_pi', dite_true, zero_apply]
+
+@[simp]
+lemma ContinuousLinearMap.embed_apply_noteq (i : ι) (x : ((j : (Finset.univ (α := ι).erase i)) → E j))
+{j : ι} (hj : j ≠ i) :
+ContinuousLinearMap.embed 𝕜 E i x j = x ⟨j, by simp only [Finset.mem_univ, not_true_eq_false,
+  Finset.mem_erase, ne_eq, hj, not_false_eq_true, and_self]⟩ := by
+  unfold embed
+  simp only [coe_pi', hj, dite_false, proj_apply, ne_eq]
+
+
+namespace ContinuousMultilinearMap
+
+variable {𝕜 E}
+
+
+def toMultilinearMap_erase (i : ι) (f : ContinuousMultilinearMap 𝕜 E F) :
+MultilinearMap 𝕜 (fun (j : (Finset.univ (α := ι).erase i)) => E j) (((i : ι) → E i) →L[𝕜] F) :=
+{
+  toFun := fun x => ContinuousLinearMap.comp (σ₁₂ := RingHom.id 𝕜) (f.toContinuousLinearMap
+    (ContinuousLinearMap.embed 𝕜 E i x) i) (ContinuousLinearMap.proj i)
+  map_add' := by
+    intro _ x ⟨j, hj⟩ a b
+    simp only
+    ext y
+    simp only at a b
+    simp only [coe_comp', Function.comp_apply, proj_apply, ContinuousLinearMap.add_apply]
+    have heq : ∀ (c : E j), (toContinuousLinearMap f ((embed 𝕜 E i) (Function.update x ⟨j, hj⟩ c)) i) (y i) =
+     f (Function.update (fun k => if k ≠ i then embed 𝕜 E i x k else y k) j c) := by
+       intro c
+       unfold toContinuousLinearMap
+       simp only [coe_mk', LinearMap.coe_mk, LinearMap.coe_toAddHom,
+         MultilinearMap.toLinearMap_apply, coe_coe, ne_eq, ite_not]
+       congr
+       ext k
+       simp only [Finset.mem_univ, not_true_eq_false, Finset.mem_erase, ne_eq, and_true] at hj
+       by_cases h : k = i
+       . rw [h, Function.update_same, Function.update_noteq (Ne.symm hj)]
+         simp only [embed_apply_same, ite_true]
+       . by_cases h' : k = j
+         . rw [h', Function.update_same, Function.update_noteq hj, embed_apply_noteq 𝕜 E _ _ hj, Function.update_same]
+         . rw [Function.update_noteq h, Function.update_noteq h', embed_apply_noteq _ _ _ _ h]
+           have h1 : j ∈ (Finset.univ (α := ι).erase i) := by simp only [Finset.mem_univ,
+             not_true_eq_false, Finset.mem_erase, ne_eq, hj, not_false_eq_true, and_self]
+           have h2 : k ∈ (Finset.univ (α := ι).erase i) := by simp only [Finset.mem_univ,
+             not_true_eq_false, Finset.mem_erase, ne_eq, h, not_false_eq_true, and_self]
+           have hne : (⟨k, h2⟩ : (Finset.univ (α := ι).erase i)) ≠ ⟨j, h1⟩ := by
+             by_contra habs
+             apply_fun (fun x => x.1) at habs
+             exact h' habs
+           rw [Function.update_noteq hne]
+           simp only [h, ne_eq, not_false_eq_true, embed_apply_noteq, ite_false]
+    rw [heq a, heq b, heq (a + b)]
+    simp only [ne_eq, ite_not, map_add]
+  map_smul' := by
+    intro _ x ⟨j, hj⟩ c a
+    simp only
+    ext y
+    simp only at a
+    simp only [coe_comp', Function.comp_apply, proj_apply, coe_smul', Pi.smul_apply]
+    have heq : ∀ (c : E j), (toContinuousLinearMap f ((embed 𝕜 E i) (Function.update x ⟨j, hj⟩ c)) i) (y i) =
+     f (Function.update (fun k => if k ≠ i then embed 𝕜 E i x k else y k) j c) := by
+       intro c
+       unfold toContinuousLinearMap
+       simp only [coe_mk', LinearMap.coe_mk, LinearMap.coe_toAddHom,
+         MultilinearMap.toLinearMap_apply, coe_coe, ne_eq, ite_not]
+       congr
+       ext k
+       simp only [Finset.mem_univ, not_true_eq_false, Finset.mem_erase, ne_eq, and_true] at hj
+       by_cases h : k = i
+       . rw [h, Function.update_same, Function.update_noteq (Ne.symm hj)]
+         simp only [embed_apply_same, ite_true]
+       . by_cases h' : k = j
+         . rw [h', Function.update_same, Function.update_noteq hj, embed_apply_noteq 𝕜 E _ _ hj, Function.update_same]
+         . rw [Function.update_noteq h, Function.update_noteq h', embed_apply_noteq _ _ _ _ h]
+           have h1 : j ∈ (Finset.univ (α := ι).erase i) := by simp only [Finset.mem_univ,
+             not_true_eq_false, Finset.mem_erase, ne_eq, hj, not_false_eq_true, and_self]
+           have h2 : k ∈ (Finset.univ (α := ι).erase i) := by simp only [Finset.mem_univ,
+             not_true_eq_false, Finset.mem_erase, ne_eq, h, not_false_eq_true, and_self]
+           have hne : (⟨k, h2⟩ : (Finset.univ (α := ι).erase i)) ≠ ⟨j, h1⟩ := by
+             by_contra habs
+             apply_fun (fun x => x.1) at habs
+             exact h' habs
+           rw [Function.update_noteq hne]
+           simp only [h, ne_eq, not_false_eq_true, embed_apply_noteq, ite_false]
+    rw [heq a, heq (c • a)]
+    simp only [ne_eq, ite_not, map_smul]
+}
+
+lemma toMultilinearMap_erase_apply (i : ι) (f : ContinuousMultilinearMap 𝕜 E F) (x : (j : (Finset.univ (α := ι).erase i)) → E j)
+(y : (i : ι) → E i) :
+f.toMultilinearMap_erase i x y = f (fun j => if h : j = i then y j else x ⟨j, by simp only [Finset.mem_univ,
+  not_true_eq_false, Finset.mem_erase, ne_eq, h, not_false_eq_true, and_self]⟩) := by
+  unfold toMultilinearMap_erase toContinuousLinearMap
+  simp only [MultilinearMap.coe_mk, coe_comp', coe_mk', LinearMap.coe_mk, LinearMap.coe_toAddHom,
+    Function.comp_apply, proj_apply, MultilinearMap.toLinearMap_apply, coe_coe, ne_eq]
+  congr
+  ext j
+  by_cases h : j = i
+  . rw [h, Function.update_same]
+    simp only [dite_true]
+  . rw [Function.update_noteq h]
+    simp only [ne_eq, h, not_false_eq_true, embed_apply_noteq, dite_false]
+
+
+lemma toMultilinearMap_erase_norm_le (i : ι) (f : ContinuousMultilinearMap 𝕜 E F) (x : (j : (Finset.univ (α := ι).erase i)) → E j) :
+‖f.toMultilinearMap_erase i x‖ ≤ ‖f‖ * Finset.prod Finset.univ (fun j => ‖x j‖) := by
+  rw [ContinuousLinearMap.op_norm_le_iff]
+  . intro y
+    rw [toMultilinearMap_erase_apply]
+    refine le_trans (ContinuousMultilinearMap.le_op_norm f _) ?_
+    rw [mul_assoc]
+    refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
+    rw [←(Finset.prod_erase_mul Finset.univ _ (Finset.mem_univ i))]
+    simp only [Finset.mem_univ, not_true_eq_false, ne_eq, dite_true]
+    refine mul_le_mul ?_ (norm_le_pi_norm y i) (norm_nonneg _) (Finset.prod_nonneg (fun _ _ => norm_nonneg _))
+    set I : (j : ι) → (j ∈ (Finset.univ (α := ι).erase i)) → (Finset.univ (α := ι).erase i) := fun j hj => ⟨j, hj⟩
+    have hI : ∀ (j : ι) (hj : j ∈ (Finset.univ (α := ι).erase i)), I j hj ∈ Finset.univ := fun _ _ => Finset.mem_univ _
+    have heq : ∀ (j : ι) (hj : j ∈ (Finset.univ (α := ι).erase i)),
+      (fun k ↦ ‖if hk : k = i then y k else x ⟨k, by simp only [Finset.mem_univ,
+        not_true_eq_false, Finset.mem_erase, ne_eq, hk, not_false_eq_true, and_self]⟩‖) j =
+        ‖x (I j hj)‖ := by
+      intro j hj
+      simp only [Finset.mem_univ, not_true_eq_false, Finset.mem_erase, ne_eq, and_true] at hj
+      simp only [hj, ne_eq, dite_false]
+    set J : (k : (Finset.univ (α := ι).erase i)) → (k ∈ Finset.univ) → ι := fun k _ => k.1
+    have hJ : ∀ (k : (Finset.univ (α := ι).erase i)) (hk : k ∈ Finset.univ), J k hk ∈ (Finset.univ (α := ι).erase i) :=
+      fun k _ =>  k.2
+    have hJI : ∀ (j : ι) (hj : j ∈ (Finset.univ (α := ι).erase i)), J (I j hj) (hI j hj) = j :=
+      fun _ _ => by simp only [Finset.univ_eq_attach]
+    have hIJ : ∀ (k : (Finset.univ (α := ι).erase i)) (hk : k ∈ Finset.univ),
+      I (J k hk) (hJ k hk) = k := fun _ _ => by simp only [Finset.univ_eq_attach, Subtype.coe_eta]
+    rw [Finset.prod_bij' I hI heq J hJ hJI hIJ (g := fun k => ‖x k‖)]
+  . exact mul_nonneg (norm_nonneg f) (Finset.prod_nonneg (fun _ _ => norm_nonneg _))
+
+
+noncomputable def toContinuousMultilinearMap_erase (i : ι) (f : ContinuousMultilinearMap 𝕜 E F) :
+ContinuousMultilinearMap 𝕜 (fun (j : (Finset.univ (α := ι).erase i)) => E j) (((i : ι) → E i) →L[𝕜] F) :=
+MultilinearMap.mkContinuous (f.toMultilinearMap_erase i) ‖f‖ (f.toMultilinearMap_erase_norm_le i)
+
+lemma toContinuousMultilinearMap_coe (i : ι) (f : ContinuousMultilinearMap 𝕜 E F) :
+(f.toContinuousMultilinearMap_erase i).toFun =
+(fun x => ContinuousLinearMap.comp (toContinuousLinearMap f x i) (ContinuousLinearMap.proj i))
+∘ (fun x => ContinuousLinearMap.embed 𝕜 E i x) := by
+  ext x
+  unfold toContinuousMultilinearMap_erase toMultilinearMap_erase toContinuousLinearMap
+  simp only [MultilinearMap.toFun_eq_coe, coe_coe, MultilinearMap.coe_mkContinuous,
+    MultilinearMap.coe_mk, coe_comp', coe_mk', LinearMap.coe_mk, LinearMap.coe_toAddHom,
+    Function.comp_apply, proj_apply, MultilinearMap.toLinearMap_apply]
+
+lemma toContinuousMultilinearMap_coe' (i : ι) (f : ContinuousMultilinearMap 𝕜 E F) :
+(fun x => ContinuousLinearMap.comp (toContinuousLinearMap f x i) (ContinuousLinearMap.proj i)) =
+(f.toContinuousMultilinearMap_erase i).toFun ∘
+(ContinuousLinearMap.pi (fun j => ContinuousLinearMap.proj (R := 𝕜) j.1)) := by
+  ext x y
+  unfold toContinuousMultilinearMap_erase toMultilinearMap_erase toContinuousLinearMap
+  simp only [coe_comp', coe_mk', LinearMap.coe_mk, LinearMap.coe_toAddHom, Function.comp_apply,
+    proj_apply, MultilinearMap.toLinearMap_apply, coe_coe, MultilinearMap.toFun_eq_coe,
+    MultilinearMap.coe_mkContinuous, MultilinearMap.coe_mk, coe_pi']
+  congr
+  ext j
+  by_cases h : j = i
+  . rw [h, Function.update_same, Function.update_same]
+  . rw [Function.update_noteq h, Function.update_noteq h, embed_apply_noteq _ _ _ _ h]
+
+
 
 noncomputable def deriv (f : ContinuousMultilinearMap 𝕜 E F)
 (x : (i : ι) → E i) : ((i : ι) → E i) →L[𝕜] F :=
 Finset.sum Finset.univ (fun (i : ι) => (f.toContinuousLinearMap x i).comp (ContinuousLinearMap.proj i))
 
-
+@[simp]
+lemma deriv_def (f : ContinuousMultilinearMap 𝕜 E F)
+(x : (i : ι) → E i) :
+f.deriv x = Finset.sum Finset.univ (fun (i : ι) => (f.toContinuousLinearMap x i).comp (ContinuousLinearMap.proj i)) := rfl
 
 @[simp]
 lemma deriv_apply (f : ContinuousMultilinearMap 𝕜 E F)
@@ -228,9 +413,102 @@ theorem differentiableOn (f : ContinuousMultilinearMap 𝕜 E F) :
   f.differentiable.differentiableOn
 
 
+universe u
+
+theorem contDiff_aux {r : ℕ} : ∀ (ι' : Type u) (hι : Fintype ι')
+(E' : ι' → Type u) (F' : Type u)
+(hE1 : (i : ι') → NormedAddCommGroup (E' i)) (hF1 : NormedAddCommGroup F') (hE2 : (i : ι') → NormedSpace 𝕜 (E' i))
+(hF2 : NormedSpace 𝕜 F')
+(n : ℕ∞) (f : ContinuousMultilinearMap 𝕜 E' F'),
+(Fintype.card ι' = r) → (DecidableEq ι') → ContDiff 𝕜 n f := by
+  induction' r with r IH
+  . intro ι' hι E' F' hE1 hF1 hE2 hF2 n f hr hdec
+    letI := hι
+    letI := hE1
+    letI := hE2
+    letI := hF1
+    letI := hF2
+    letI := hdec
+    rw [Fintype.card_eq_zero_iff] at hr
+    letI := hr
+    have he : ∀ (x : (i : ι') → E' i), x = 0 :=
+      fun _ => funext (fun i => hr.elim i)
+    have heq : f = ContinuousMultilinearMap.constOfIsEmpty 𝕜 E' (f 0) := by
+      ext x
+      rw [he x, constOfIsEmpty_apply]
+    rw [heq]
+    apply contDiff_const
+  . intro ι' hι E' F' hE1 hF1 hE2 hF2 n f hr hdec
+    letI := hι
+    letI := hE1
+    letI := hE2
+    letI := hF1
+    letI := hF2
+    letI := hdec
+    suffices h : ContDiff 𝕜 ⊤ f from h.of_le le_top
+    rw [contDiff_top_iff_fderiv, and_iff_right f.differentiable]
+    rw [funext (fun x => f.fderiv x), funext (fun x => f.deriv_def x)]
+    apply ContDiff.sum
+    intro i _
+    rw [toContinuousMultilinearMap_coe']
+    refine ContDiff.comp ?_ (ContinuousLinearMap.contDiff _)
+    have hcard : Fintype.card (Finset.univ (α := ι').erase i) = r := by
+      simp only [Finset.mem_univ, not_true_eq_false, Finset.mem_erase, ne_eq, and_true,
+        Fintype.card_subtype_compl, Fintype.card_ofSubsingleton, ge_iff_le]
+      rw [hr, ←Nat.pred_eq_sub_one, Nat.pred_succ]
+    exact IH (Finset.univ (α := ι').erase i) inferInstance
+      (fun (i : (Finset.univ (α := ι').erase i)) => E' i) (((i : ι') → (E' i)) →L[𝕜] F')
+      (fun (i : (Finset.univ (α := ι').erase i)) => hE1 i) inferInstance
+      (fun (i : (Finset.univ (α := ι').erase i)) => hE2 i) inferInstance
+      ⊤ (f.toContinuousMultilinearMap_erase i) hcard inferInstance
+
+variable {G : Type*} [NormedAddCommGroup G] [NormedSpace 𝕜 G]
+
+theorem contDiff_aux' {n : ℕ∞} (f : ContinuousMultilinearMap 𝕜 (fun (i : ι) => G) F) :
+ContDiff 𝕜 n f := by
+  let r := Fintype.card ι
+  let ιu : Type max v u_2 w₂ := ULift.{max v u_2 w₂} ι
+  let Gu : Type max v u_2 w₂ := ULift.{max v u_2 w₂} G
+  let Fu : Type max v u_2 w₂ := ULift.{max v u_2 w₂} F
+  have isoι : ιu ≃ ι := Equiv.ulift
+  have isoG : Gu ≃L[𝕜] G := ContinuousLinearEquiv.ulift
+  have isoF : Fu ≃L[𝕜] F := ContinuousLinearEquiv.ulift
+  set g := isoF.symm.toContinuousLinearMap.compContinuousMultilinearMap
+    ((f.domDomCongr isoι.symm).compContinuousLinearMap (fun i => isoG.toContinuousLinearMap))
+  have hgdiff := contDiff_aux (𝕜 := 𝕜) (r := r) ιu inferInstance (fun i => Gu) Fu (fun i => inferInstance)
+    inferInstance (fun i => inferInstance) inferInstance n g (by simp only [Fintype.card_ulift]) inferInstance
+
+
+theorem contDiff {n : ℕ∞} (f : ContinuousMultilinearMap 𝕜 E F) :
+ContDiff 𝕜 n f := by
+  set G := (i : ι) → E i
+  set g : ContinuousMultilinearMap 𝕜 (fun (i : ι) => G) F := f.compContinuousLinearMap
+    (fun i => ContinuousLinearMap.proj i)
+  set truc : ((i : ι) → (E i)) →L[𝕜] (i : ι) → G := by
+    apply ContinuousLinearMap.pi
+    intro i
+    refine ContinuousLinearMap.comp ?_ (ContinuousLinearMap.proj i)
+    apply ContinuousLinearMap.pi
+    intro j
+    by_cases h : j = i
+    . rw [h]; apply ContinuousLinearMap.id
+    . exact 0
+  have hfg : f = g ∘ truc := by
+    ext v
+    simp only [eq_mpr_eq_cast, coe_pi', coe_comp', Function.comp_apply, proj_apply,
+      compContinuousLinearMap_apply, cast_eq, dite_eq_ite, ite_true, coe_id', id_eq]
+  rw [hfg]
+  exact ContDiff.comp g.contDiff_aux' (ContinuousLinearMap.contDiff _)
+
 #exit
 
-theorem ContinuousMultilinearMap.contDiff {𝕜 : Type*} {ι : Type*} [Fintype ι] {E : ι → Type*} {F : Type*}
-[NontriviallyNormedField 𝕜] [(i : ι) → NormedAddCommGroup (E i)] [(i : ι) → NormedSpace 𝕜 (E i)]
-[NormedAddCommGroup F] [NormedSpace 𝕜 F] {n : ℕ∞} (M : ContinuousMultilinearMap 𝕜 E F) :
-ContDiff 𝕜 n M.toFun := sorry
+theorem contDiff {n : ℕ∞} (f : ContinuousMultilinearMap 𝕜 E F) :
+ContDiff 𝕜 n f := by
+  let r := Fintype.card ι
+  let ιu : Type max v w₁ w₂ := ULift.{max v w₁ w₂} ι
+  let Eu : ιu → Type max v w₁ w₂ := fun (i : ιu) => ULift.{max v w₁ w₂} (E i.down)
+  let Fu : Type max v w₁ w₂ := ULift.{max v w₁ w₂} F
+  have isoι : ιu ≃ ι := Equiv.ulift
+  have isoE : ∀ (i : ιu), Eu i ≃ₗᵢ[𝕜] E i.down := fun i => LinearIsometryEquiv.ulift 𝕜 (E i.down)
+  have isoF : Fu ≃ₗᵢ[𝕜] F := LinearIsometryEquiv.ulift 𝕜 F
+  sorry

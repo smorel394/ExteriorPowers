@@ -1,5 +1,6 @@
 import Mathlib.Tactic
 import Mathlib.LinearAlgebra.Multilinear.Basic
+import Mathlib.Data.Finset.Update
 
 
 namespace MultilinearMap
@@ -7,6 +8,46 @@ namespace MultilinearMap
 variable {R : Type uR} [Semiring R]  {ι : Type uι} {M : ι → Type v} {N : Type w}
 [∀ (i : ι), AddCommGroup (M i)] [AddCommGroup N] [∀ (i : ι), Module R (M i)]
 [Module R N] {n : ℕ} [DecidableEq ι]
+
+/-
+lemma truc (x : (i : ι) → M i) (s : Finset ι) (y : (i : s) → M i.1) (i : s) (a : M i) :
+Function.updateFinset x s (Function.update y i a) =
+Function.update (Function.updateFinset x s y) i.1 a := by
+  unfold Function.updateFinset
+  ext j
+  by_cases h : j ∈ s
+  . simp only [h, ne_eq, dite_true]
+    by_cases h' : j = i.1
+    . have h'' : ⟨j, h⟩ = i := sorry
+      change Function.update y i a ⟨j, h⟩ = _
+      sorry
+    . sorry
+  . have h' : j ≠ i.1 := sorry
+    simp only [h, ne_eq, dite_false, h', not_false_eq_true, Function.update_noteq]
+
+
+noncomputable def toMultilinearMap_finset (f : MultilinearMap R M N) (s : Finset ι)
+(x : (i : ι) → M i) :
+MultilinearMap R (fun (i : s) => M i.1) N where
+toFun := fun y => f (Function.updateFinset x s y)
+map_add' y i a b := by
+  simp only
+  have heq : f (Function.updateFinset x s (Function.update y i a)) =
+    f (Function.update (Function.updateFinset x s y) i.1 a) := by
+    congr
+    unfold Function.updateFinset
+    ext j
+    by_cases h : j ∈ s
+    . simp only [h, ne_eq, dite_true]
+      by_cases h' : j = i.1
+      . have h'' : ⟨j, h⟩ = i := sorry
+        change Function.update y i a ⟨j, h⟩ = _
+        simp_rw [h'']
+      . sorry
+    . sorry
+  rw [heq]
+map_smul' := sorry
+-/
 
 lemma apply_sub [LinearOrder ι]
 (f : MultilinearMap R M N) (a b v : (i : ι) → (M i)) (s : Finset ι)
@@ -473,8 +514,52 @@ lemma linearDeriv_apply (f : MultilinearMap R M N)
 lemma sub_vs_linearDeriv (f : MultilinearMap R M N) (x h h' : (i : ι) → M i) :
 f (x + h) - f (x + h') - f.linearDeriv x (h - h') =
 Finset.sum (Set.Finite.toFinset ((Set.finite_coe_iff (s := {s : Finset ι | 2 ≤ s.card})).mp inferInstance))
-(fun (s : Finset ι) => f (s.piecewise h x) - f (s.piecewise h' x)) := by sorry
+(fun (s : Finset ι) => f (s.piecewise h x) - f (s.piecewise h' x)) := by
+  rw [add_comm x h, add_comm x h', MultilinearMap.map_add_univ, MultilinearMap.map_add_univ,
+    linearDeriv_apply, ←Finset.sum_sub_distrib, ←(Finset.sum_compl_add_sum
+    (Set.Finite.toFinset ((Set.finite_coe_iff (s := {s : Finset ι | 2 ≤ s.card})).mp inferInstance))),
+    add_comm, ←add_sub, add_right_eq_self]
+  set S := (Set.Finite.toFinset ((Set.finite_coe_iff (s := {s : Finset ι | 2 ≤ s.card})).mp inferInstance))ᶜ
+  have hS : ∀ (s : Finset ι), s ∈ S ↔ s.card ≤ 1 := by
+    intro s
+    simp only [Set.Finite.toFinset_setOf, Finset.mem_univ, forall_true_left, not_le,
+      Finset.compl_filter, not_lt, Finset.mem_filter, true_and]
+    rw [Nat.lt_succ_iff]
+  have heS : ∅ ∈ S := by rw [hS]; simp only [Finset.card_empty, zero_le]
+  have hS' : ∀ (s : Finset ι), s ∈ S.erase ∅ ↔ s.card = 1 := by
+    intro s
+    rw [Finset.mem_erase, hS, Nat.le_one_iff_eq_zero_or_eq_one, Finset.card_eq_zero]
+    aesop
+  rw [←(Finset.sum_erase_add _ _ heS), Finset.piecewise_empty, Finset.piecewise_empty, sub_self, add_zero]
+  set I : (s : Finset ι) → (s ∈ S.erase ∅) → ι := fun s hs
+    => by rw [hS' s, Finset.card_eq_one] at hs
+          exact Classical.choose hs
+  have hI : ∀ (s : Finset ι) (hs : s ∈ S.erase ∅), I s hs ∈ Finset.univ :=
+    fun _ _ => Finset.mem_univ _
+  have heq : ∀ (s : Finset ι) (hs : s ∈ S.erase ∅),
+    f (s.piecewise h x) - f (s.piecewise h' x) = f (Function.update x (I s hs) ((h - h') (I s hs))) := by
+    intro s hs
+    rw [hS', Finset.card_eq_one] at hs
+    conv => lhs
+            rw [Classical.choose_spec hs, Finset.piecewise_singleton,
+              Finset.piecewise_singleton, ←MultilinearMap.map_sub]
+  set J : (i : ι) → (i ∈ Finset.univ) → Finset ι := fun i _ => {i}
+  have hJ : ∀ (i : ι) (hi : i ∈ Finset.univ), J i hi ∈ S.erase ∅ :=
+    fun _ _ => by rw [hS']; exact Finset.card_singleton _
+  have hJI : ∀ (s : Finset ι) (hs : s ∈ S.erase ∅), J (I s hs) (hI s hs) = s := by
+    intro s hs
+    simp only [Set.coe_setOf, Set.mem_setOf_eq]
+    rw [hS', Finset.card_eq_one] at hs
+    exact Eq.symm (Classical.choose_spec hs)
+  have hIJ : ∀ (i : ι) (hi : i ∈ Finset.univ), I (J i hi) (hJ i hi) = i := by
+    intro i hi; apply Eq.symm; rw [←Finset.mem_singleton]
+    have hs := hJ i hi
+    rw [hS', Finset.card_eq_one] at hs
+    change i ∈ {Classical.choose hs}
+    rw [←(Classical.choose_spec hs)]
+    simp only [Finset.mem_singleton]
+  rw [Finset.sum_bij' I hI heq J hJ hJI hIJ (g := fun i => f (Function.update x i ((h - h') i))),
+    sub_self]
 
--- MultilinearMap.map_add_univ
 
 end MultilinearMap
