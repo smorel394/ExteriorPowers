@@ -9,45 +9,6 @@ variable {R : Type uR} [Semiring R]  {ι : Type uι} {M : ι → Type v} {N : Ty
 [∀ (i : ι), AddCommGroup (M i)] [AddCommGroup N] [∀ (i : ι), Module R (M i)]
 [Module R N] {n : ℕ} [DecidableEq ι]
 
-/-
-lemma truc (x : (i : ι) → M i) (s : Finset ι) (y : (i : s) → M i.1) (i : s) (a : M i) :
-Function.updateFinset x s (Function.update y i a) =
-Function.update (Function.updateFinset x s y) i.1 a := by
-  unfold Function.updateFinset
-  ext j
-  by_cases h : j ∈ s
-  . simp only [h, ne_eq, dite_true]
-    by_cases h' : j = i.1
-    . have h'' : ⟨j, h⟩ = i := sorry
-      change Function.update y i a ⟨j, h⟩ = _
-      sorry
-    . sorry
-  . have h' : j ≠ i.1 := sorry
-    simp only [h, ne_eq, dite_false, h', not_false_eq_true, Function.update_noteq]
-
-
-noncomputable def toMultilinearMap_finset (f : MultilinearMap R M N) (s : Finset ι)
-(x : (i : ι) → M i) :
-MultilinearMap R (fun (i : s) => M i.1) N where
-toFun := fun y => f (Function.updateFinset x s y)
-map_add' y i a b := by
-  simp only
-  have heq : f (Function.updateFinset x s (Function.update y i a)) =
-    f (Function.update (Function.updateFinset x s y) i.1 a) := by
-    congr
-    unfold Function.updateFinset
-    ext j
-    by_cases h : j ∈ s
-    . simp only [h, ne_eq, dite_true]
-      by_cases h' : j = i.1
-      . have h'' : ⟨j, h⟩ = i := sorry
-        change Function.update y i a ⟨j, h⟩ = _
-        simp_rw [h'']
-      . sorry
-    . sorry
-  rw [heq]
-map_smul' := sorry
--/
 
 lemma apply_sub [LinearOrder ι]
 (f : MultilinearMap R M N) (a b v : (i : ι) → (M i)) (s : Finset ι)

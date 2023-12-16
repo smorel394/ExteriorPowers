@@ -464,7 +464,7 @@ theorem contDiff_aux {r : ℕ} : ∀ (ι' : Type u) (hι : Fintype ι')
 
 variable {G : Type*} [NormedAddCommGroup G] [NormedSpace 𝕜 G]
 
-theorem contDiff_aux' {n : ℕ∞} (f : ContinuousMultilinearMap 𝕜 (fun (i : ι) => G) F) :
+theorem contDiff_aux' {n : ℕ∞} (f : ContinuousMultilinearMap 𝕜 (fun (_ : ι) => G) F) :
 ContDiff 𝕜 n f := by
   let r := Fintype.card ι
   let ιu : Type max v u_2 w₂ := ULift.{max v u_2 w₂} ι
@@ -474,15 +474,26 @@ ContDiff 𝕜 n f := by
   have isoG : Gu ≃L[𝕜] G := ContinuousLinearEquiv.ulift
   have isoF : Fu ≃L[𝕜] F := ContinuousLinearEquiv.ulift
   set g := isoF.symm.toContinuousLinearMap.compContinuousMultilinearMap
-    ((f.domDomCongr isoι.symm).compContinuousLinearMap (fun i => isoG.toContinuousLinearMap))
-  have hgdiff := contDiff_aux (𝕜 := 𝕜) (r := r) ιu inferInstance (fun i => Gu) Fu (fun i => inferInstance)
-    inferInstance (fun i => inferInstance) inferInstance n g (by simp only [Fintype.card_ulift]) inferInstance
-
+    ((f.domDomCongr isoι.symm).compContinuousLinearMap (fun _ => isoG.toContinuousLinearMap))
+  have hfg : f = isoF.toContinuousLinearMap ∘ g ∘ (ContinuousLinearMap.pi
+    (fun i => ContinuousLinearMap.comp isoG.symm.toContinuousLinearMap (ContinuousLinearMap.proj (isoι i))) :
+    ((i : ι) → G) →L[𝕜] (i : ιu) → Gu) := by
+    ext v
+    simp only [ContinuousLinearEquiv.coe_coe, compContinuousMultilinearMap_coe, coe_pi', coe_comp',
+      Function.comp_apply, proj_apply, compContinuousLinearMap_apply,
+      ContinuousLinearEquiv.apply_symm_apply, domDomCongr_apply]
+    congr
+    ext j
+    rw [Equiv.apply_symm_apply]
+  rw [hfg]
+  refine ContDiff.comp (ContinuousLinearMap.contDiff _) (ContDiff.comp ?_ (ContinuousLinearMap.contDiff _))
+  exact contDiff_aux (𝕜 := 𝕜) (r := r) ιu inferInstance (fun _ => Gu) Fu (fun _ => inferInstance)
+    inferInstance (fun _ => inferInstance) inferInstance n g (by simp only [Fintype.card_ulift]) inferInstance
 
 theorem contDiff {n : ℕ∞} (f : ContinuousMultilinearMap 𝕜 E F) :
 ContDiff 𝕜 n f := by
   set G := (i : ι) → E i
-  set g : ContinuousMultilinearMap 𝕜 (fun (i : ι) => G) F := f.compContinuousLinearMap
+  set g : ContinuousMultilinearMap 𝕜 (fun (_ : ι) => G) F := f.compContinuousLinearMap
     (fun i => ContinuousLinearMap.proj i)
   set truc : ((i : ι) → (E i)) →L[𝕜] (i : ι) → G := by
     apply ContinuousLinearMap.pi
@@ -500,15 +511,4 @@ ContDiff 𝕜 n f := by
   rw [hfg]
   exact ContDiff.comp g.contDiff_aux' (ContinuousLinearMap.contDiff _)
 
-#exit
-
-theorem contDiff {n : ℕ∞} (f : ContinuousMultilinearMap 𝕜 E F) :
-ContDiff 𝕜 n f := by
-  let r := Fintype.card ι
-  let ιu : Type max v w₁ w₂ := ULift.{max v w₁ w₂} ι
-  let Eu : ιu → Type max v w₁ w₂ := fun (i : ιu) => ULift.{max v w₁ w₂} (E i.down)
-  let Fu : Type max v w₁ w₂ := ULift.{max v w₁ w₂} F
-  have isoι : ιu ≃ ι := Equiv.ulift
-  have isoE : ∀ (i : ιu), Eu i ≃ₗᵢ[𝕜] E i.down := fun i => LinearIsometryEquiv.ulift 𝕜 (E i.down)
-  have isoF : Fu ≃ₗᵢ[𝕜] F := LinearIsometryEquiv.ulift 𝕜 F
-  sorry
+end ContinuousMultilinearMap
