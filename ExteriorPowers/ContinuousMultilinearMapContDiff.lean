@@ -256,7 +256,7 @@ lemma sub_piecewise_bound (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) 
 ‖x‖ ^ sᶜ.card * ‖h‖ ^ (s.card - 1) * ‖h.1 - h.2‖) := by
   letI : LinearOrder ι := WellFounded.wellOrderExtension emptyWf.wf
   set n := s.card
-  convert (congr_arg norm (MultilinearMap.apply_sub f.toMultilinearMap h.1 h.2 x s rfl)).trans_le _
+  convert (congr_arg norm (MultilinearMap.apply_sub f.toMultilinearMap h.1 h.2 x (s := s) rfl)).trans_le _
   refine le_trans (norm_sum_le _ _) ?_
   have heq : (Finset.univ (α := Fin n)).card = n := by simp only [Finset.card_fin]
   rw [←heq, ←(Finset.sum_const (α := Fin n))]
