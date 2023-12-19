@@ -4,14 +4,258 @@ import Mathlib.Analysis.Calculus.ContDiff.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Order.Extension.Well
 import ExteriorPowers.MultilinearMap
+import Mathlib.Analysis.Calculus.FDeriv.Analytic
 
 
-open Filter Asymptotics ContinuousLinearMap Set Metric
+
+
+open Filter Asymptotics ContinuousLinearMap Metric
 open Topology NNReal Asymptotics ENNReal
 open NormedField
 
+namespace MultilinearMap
+
+variable {R : Type uR} [Semiring R]  {ι : Type uι} {M : ι → Type v} {N : Type w}
+[∀ (i : ι), AddCommGroup (M i)] [AddCommGroup N] [∀ (i : ι), Module R (M i)]
+[Module R N] {n : ℕ} [DecidableEq ι]
+
+def toMultilinearMap_set (f : MultilinearMap R M N) (x : (i : ι) → M i) (s : Set ι)
+[(i : ι) → Decidable (i ∈ s)] :
+MultilinearMap R (fun (_ : s) => (i : ι) → M i) N where
+toFun z := f (fun i => if h : i ∈ s then z ⟨i, h⟩ i else x i)
+map_add' z i a b := by
+  have heq : ∀ (c : (i : ι) → M i),
+      (fun j ↦ if h : j ∈ s then Function.update z i c ⟨j, h⟩ j else x j) =
+      Function.update (fun j => if h : j ∈ s then z ⟨j, h⟩ j else x j) i (c i.1) := by
+    intro c; ext j
+    by_cases h : j ∈ s
+    . simp only [h, ne_eq, dite_true]
+      by_cases h' : ⟨j, h⟩ = i
+      . rw [h', Function.update_same]
+        have h'' : j = i.1 := by apply_fun (fun k => k.1) at h'; simp only at h'; exact h'
+        rw [h'', Function.update_same]
+      . have h'' : j ≠ i.1 := by
+          rw [← SetCoe.ext_iff] at h'
+          exact h'
+        rw [Function.update_noteq h', Function.update_noteq h'']
+        simp only [h, dite_true]
+    . have h' : j ≠ i.1 := by
+        by_contra habs
+        rw [habs] at h
+        simp only [Subtype.coe_prop, not_true_eq_false] at h
+      rw [Function.update_noteq h']
+      simp only [h, ne_eq, dite_false]
+  simp only
+  rw [heq a, heq b, heq (a + b)]
+  simp only [Pi.add_apply, MultilinearMap.map_add]
+map_smul' z i c a := by
+-- This is copy-pasted code from the proof of map_add'. If I try to make it an outside lemma, rw refuses to
+-- take it for some reason.
+  have heq : ∀ (c : (i : ι) → M i),
+      (fun j ↦ if h : j ∈ s then Function.update z i c ⟨j, h⟩ j else x j) =
+      Function.update (fun j => if h : j ∈ s then z ⟨j, h⟩ j else x j) i (c i.1) := by
+    intro c; ext j
+    by_cases h : j ∈ s
+    . simp only [h, ne_eq, dite_true]
+      by_cases h' : ⟨j, h⟩ = i
+      . rw [h', Function.update_same]
+        have h'' : j = i.1 := by apply_fun (fun k => k.1) at h'; simp only at h'; exact h'
+        rw [h'', Function.update_same]
+      . have h'' : j ≠ i.1 := by
+          rw [← SetCoe.ext_iff] at h'
+          exact h'
+        rw [Function.update_noteq h', Function.update_noteq h'']
+        simp only [h, dite_true]
+    . have h' : j ≠ i.1 := by
+        by_contra habs
+        rw [habs] at h
+        simp only [Subtype.coe_prop, not_true_eq_false] at h
+      rw [Function.update_noteq h']
+      simp only [h, ne_eq, dite_false]
+  simp only
+  rw [heq a, heq]
+  simp only [Pi.smul_apply, MultilinearMap.map_smul]
+
+@[simp]
+lemma toMultilinearMap_set_apply (f : MultilinearMap R M N)
+(x : (i : ι) → M i) (s : Set ι) [(i : ι) → Decidable (i ∈ s)]
+(z : (_ : s) → ((i : ι) → M i)) :
+f.toMultilinearMap_set x s z = f (fun i => if h : i ∈ s then z ⟨i, h⟩ i else x i) := by
+  unfold toMultilinearMap_set
+  rfl
+
+lemma toMultilinearMap_set_apply_diag (f : MultilinearMap R M N)
+(x : (i : ι) → M i) (s : Set ι) [(i : ι) → Decidable (i ∈ s)] (y : (i : ι) → M i) :
+f.toMultilinearMap_set x s (fun (_ : s) => y) = f (s.piecewise y x) := by
+  unfold toMultilinearMap_set
+  simp only [coe_mk, dite_eq_ite]
+  congr
 
 
+end MultilinearMap
+
+namespace ContinuousMultilinearMap
+
+open BigOperators MultilinearMap
+
+variable {𝕜 : Type u_1} [NontriviallyNormedField 𝕜] {ι : Type v} [Fintype ι]
+{E : ι → Type w₁} {F : Type w₂}
+[(i : ι) → NormedAddCommGroup (E i)] [NormedAddCommGroup F] [(i : ι) → NormedSpace 𝕜 (E i)]
+[NormedSpace 𝕜 F] [DecidableEq ι]
+
+lemma toMultilinearMap_bound (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i)
+   (s : Finset ι) (z : ( _ : s) → ((i : ι) → E i)) :
+   ‖f.toMultilinearMap_set x s z‖ ≤ ‖f‖ * (∏ i in sᶜ, ‖x i‖) * (∏ i, ‖z i‖) := by
+  rw [toMultilinearMap_set_apply]
+  refine le_trans (ContinuousMultilinearMap.le_op_norm _ _) ?_
+  rw [mul_assoc]
+  refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
+  rw [← (Finset.prod_compl_mul_prod s)]
+  refine mul_le_mul ?_ ?_ (Finset.prod_nonneg (fun _ _ => norm_nonneg _))
+    (Finset.prod_nonneg (fun _ _ => norm_nonneg _))
+  . apply Finset.prod_le_prod (fun _ _ => norm_nonneg _)
+    intro i hi
+    rw [Finset.mem_compl] at hi
+    simp only [Finset.mem_coe, hi, dite_false, le_refl]
+  . rw [← Finset.prod_coe_sort]
+    apply Finset.prod_le_prod (fun _ _ =>  norm_nonneg _)
+    intro i _
+    simp only [Finset.mem_coe, Finset.coe_mem, Subtype.coe_eta, dite_eq_ite, ite_true]
+    apply norm_le_pi_norm
+
+noncomputable def toContinuousMultilinearMap_finset (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i)
+    (s : Finset ι) : ContinuousMultilinearMap 𝕜 (fun (_ : s) => (i : ι) → E i) F :=
+  MultilinearMap.mkContinuous (f.toMultilinearMap_set x s) (‖f‖ * (∏ i in sᶜ, ‖x i‖))
+  (f.toMultilinearMap_bound x s)
+
+@[simp]
+lemma toContinuousMultilinearMap_finset_apply (f : ContinuousMultilinearMap 𝕜 E F)
+(x : (i : ι) → E i) (s : Finset ι) (z : (_ : s) → ((i : ι) → E i)) :
+f.toContinuousMultilinearMap_finset x s z = f (fun i => if h : i ∈ s then z ⟨i, h⟩ i else x i) := by
+  unfold toContinuousMultilinearMap_finset
+  simp only [coe_mkContinuous]
+  erw [toMultilinearMap_set_apply]
+
+lemma toMultilinearMap_finset_apply_diag (f : ContinuousMultilinearMap 𝕜 E F)
+(x : (i : ι) → E i) (s : Finset ι) (y : (i : ι) → E i) :
+f.toContinuousMultilinearMap_finset x s (fun (_ : s) => y) = f (s.piecewise y x) := by
+  simp only [toContinuousMultilinearMap_finset_apply, dite_eq_ite]
+  congr
+
+
+noncomputable def toFormalMultilinearSeries [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
+    (x : (i : ι) → E i) :
+    FormalMultilinearSeries 𝕜 ((i : ι) → E i) F :=
+  fun n => (∑ s : {s : Finset ι | s.card = n},
+  (f.toContinuousMultilinearMap_finset x s).domDomCongr (s.1.orderIsoOfFin s.2).symm)
+
+lemma toFormalMultilinearSeries_support [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
+    (x : (i : ι) → E i) {n : ℕ} (hn : Fintype.card ι < n) :
+    f.toFormalMultilinearSeries x n = 0 := by
+    unfold toFormalMultilinearSeries
+    have he : IsEmpty {s : Finset ι | s.card = n} := by
+      rw [lt_iff_not_le] at hn
+      by_contra hne
+      simp only [Set.coe_setOf, isEmpty_subtype, not_forall, not_not] at hne
+      exact hn (le_trans (le_of_eq (Eq.symm (Classical.choose_spec hne))) (Finset.card_le_univ _))
+    rw [Finset.univ_eq_empty_iff.mpr he, Finset.sum_empty]
+
+lemma toFormalMultilinearSeries_radius [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
+    (x : (i : ι) → E i) : (f.toFormalMultilinearSeries x).radius = ⊤ := by
+  apply FormalMultilinearSeries.radius_eq_top_of_forall_image_add_eq_zero _ (Fintype.card ι).succ
+  intro n
+  apply toFormalMultilinearSeries_support
+  apply Nat.lt_add_left
+  exact Nat.lt_succ_self _
+
+/- Useless ?
+lemma toFormalMultilinearSeries_support_finite [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
+    (x y : (i : ι) → E i) : Set.Finite (Function.support (fun (n : ℕ) => ((f.toFormalMultilinearSeries x n)
+    fun (_ : Fin n) => y))) := by
+  apply Set.Finite.subset (s := Finset.range (Fintype.card ι).succ) (Finset.finite_toSet _)
+  simp only [Finset.coe_range, Function.support_subset_iff', Set.mem_Iio]
+  intro n
+  rw [not_lt]
+  exact fun hn =>
+  by rw [f.toFormalMultilinearSeries_support x (lt_of_lt_of_le (Nat.lt_succ_self _) hn), zero_apply]
+-/
+
+/- Useless ?
+lemma toFormalMultilinearSeries_sum_eq_partialSum [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
+    (x y : (i : ι) → E i) :
+    (f.toFormalMultilinearSeries x).sum y = (f.toFormalMultilinearSeries x).partialSum (Fintype.card ι).succ y := by
+  apply tsum_eq_sum
+  intro n hn
+  simp only [Finset.mem_range, not_lt] at hn
+  rw [f.toFormalMultilinearSeries_support x (lt_of_lt_of_le (Nat.lt_succ_self _) hn), zero_apply]
+-/
+
+lemma toFormalMultilinearSeries_partialSum [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
+    (x y : (i : ι) → E i) :
+    f (x + y) = (f.toFormalMultilinearSeries x).partialSum (Fintype.card ι).succ y := by
+  rw [add_comm, ContinuousMultilinearMap.map_add_univ, ← (Finset.sum_fiberwise_of_maps_to (g := fun s => s.card)
+  (t := Finset.range (Fintype.card ι).succ))]
+  . rw [FormalMultilinearSeries.partialSum]
+    apply Finset.sum_congr rfl
+    intro n hn
+    simp only [Finset.mem_range] at hn
+    unfold toFormalMultilinearSeries
+    simp only [Finset.mem_univ, forall_true_left, Finset.univ_filter_card_eq, gt_iff_lt,
+      Set.coe_setOf, Set.mem_setOf_eq, sum_apply, domDomCongr_apply,
+      toContinuousMultilinearMap_finset_apply, dite_eq_ite]
+    set I : (s : {s : Finset ι // s.card = n}) → (s ∈ Finset.univ) → Finset ι := fun s _ => s.1
+    have hI : ∀ (s : {s : Finset ι // s.card = n}) (hs : s ∈ Finset.univ),
+        I s hs ∈ Finset.powersetCard n Finset.univ := by
+      intro s _
+      simp only [gt_iff_lt, Finset.mem_powersetCard_univ]
+      exact s.2
+    have heq : ∀ (s : {s : Finset ι // s.card = n}) (hs : s ∈ Finset.univ),
+        f (fun i ↦ if i ∈ s.1 then y i else x i) = f ((I s hs).piecewise y x) := by
+      intro s _
+      congr
+    rw [Finset.sum_bij I hI heq (g := fun s => f (s.piecewise y x))]
+    . intro s t _ _
+      rw [SetCoe.ext_iff]
+      simp only [imp_self]
+    . intro s hs
+      simp only [gt_iff_lt, Finset.mem_powersetCard_univ] at hs
+      existsi ⟨s, hs⟩
+      existsi (Finset.mem_univ _)
+      simp only
+  . intro s _
+    rw [Finset.mem_range, Nat.lt_succ]
+    apply Finset.card_le_univ
+
+lemma toFormalMultilinearSeries_hasSum [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
+    (x y : (i : ι) → E i) :
+    HasSum (fun (n : ℕ) => (f.toFormalMultilinearSeries x n) fun (_ : Fin n) => y) (f (x + y)) := by
+  rw [toFormalMultilinearSeries_partialSum]
+  apply hasSum_sum_of_ne_finset_zero
+  intro n hn
+  simp only [Finset.mem_range, not_lt] at hn
+  rw [f.toFormalMultilinearSeries_support x (lt_of_lt_of_le (Nat.lt_succ_self _) hn), zero_apply]
+
+def hasFPowerSeries [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) :
+    HasFPowerSeriesOnBall f (f.toFormalMultilinearSeries x) x ⊤  where
+  r_le := by rw [toFormalMultilinearSeries_radius]
+  r_pos := zero_lt_top
+  hasSum := fun _ => f.toFormalMultilinearSeries_hasSum x _
+
+lemma analyticAt (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) :
+    AnalyticAt 𝕜 f x := by
+  letI : LinearOrder ι := WellFounded.wellOrderExtension emptyWf.wf
+  exact HasFPowerSeriesOnBall.analyticAt (f.hasFPowerSeries x)
+
+variable [CompleteSpace F]
+
+lemma contDiffAt (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) {n : ℕ∞} :
+    ContDiffAt 𝕜 n f x := AnalyticAt.contDiffAt (f.analyticAt x)
+
+
+end ContinuousMultilinearMap
+
+
+#exit
 
 variable {𝕜 : Type u_1} [NontriviallyNormedField 𝕜] {ι : Type v} [Fintype ι]
 {E : ι → Type w₁} {F : Type w₂}
