@@ -1,5 +1,5 @@
 import Mathlib.Tactic
-import Mathlib.Geometry.Manifold.ContMDiff
+import Mathlib.Geometry.Manifold.ContMDiff.Product
 import ExteriorPowers.Manifold
 import ExteriorPowers.contMDiff_openEmbedding
 import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra

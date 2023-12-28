@@ -1,110 +1,131 @@
-import Mathlib.Tactic
-import Mathlib.Analysis.NormedSpace.Multilinear
-import Mathlib.Order.Extension.Well
+import Mathlib.Data.Set.Finite
 
-namespace MultilinearMap
+variable (n : ℕ)
 
-variable {R : Type uR} [Semiring R]  {ι : Type uι} {M : ι → Type v} {N : Type w}
-[∀ (i : ι), AddCommGroup (M i)] [AddCommGroup N] [∀ (i : ι), Module R (M i)]
-[Module R N] {n : ℕ}
+def s := ((Finset.range n).sigma fun k =>
+           (Finset.univ.filter (fun (l : Finset.range n) => k + l < n)).sigma fun l =>
+           (Finset.univ : Finset ({s : Finset (Fin (k + l)) // s.card = l})))
 
-lemma apply_sub [LinearOrder ι]
-(f : MultilinearMap R M N) (a b v : (i : ι) → (M i)) (s : Finset ι)
-(hs : Finset.card s = n) :
-f (s.piecewise a v) - f (s.piecewise b v) = Finset.sum Finset.univ (fun (i : Fin n) =>
-f (fun j => if h : j ∈ s then (if (s.orderIsoOfFin hs).symm ⟨j, h⟩ < i then a j
-else if (s.orderIsoOfFin hs).symm ⟨j, h⟩ = i then a j - b j else b j) else v j)) := by sorry
+#check s
 
-end MultilinearMap
-
-namespace ContinuousMultilinearMap
-
+example (n : ℕ) :
+    Set.Finite {p : (k : ℕ) × (l : ℕ) × {s : Finset (Fin (k + l)) // s.card = l} |
+    p.1 < n ∧ p.2.1 < n} := by
+  convert_to Set.Finite ((Finset.range n).sigma fun k =>
+    (Finset.range n).sigma fun l =>
+      (Finset.univ : Finset ({s : Finset (Fin (k + l)) // s.card = l}))).toSet
+  · ext ⟨k, l, s⟩
+    simp
+  apply Finset.finite_toSet
 
 
-variable {𝕜 : Type u_1} [NontriviallyNormedField 𝕜] {ι : Type v} [Fintype ι]
-{E : ι → Type w₁} {F : Type w₂}
-[(i : ι) → NormedAddCommGroup (E i)] [NormedAddCommGroup F] [(i : ι) → NormedSpace 𝕜 (E i)]
-[NormedSpace 𝕜 F] [DecidableEq ι]
+def f : (k : ℕ) × (l : ℕ) × {s : Finset (Fin (k + l)) // s.card = l} → ℕ × ℕ := fun p ↦ ⟨p.1, p.2.1⟩
+
+def g (k l : ℕ) : f ⁻¹' {⟨k, l⟩} → Finset (Fin (k + l)) :=
+          fun x ↦ by have h := Prod.eq_iff_fst_eq_snd_eq.mp
+                       (Set.mem_singleton_iff.mp (Set.mem_preimage.mp x.2))
+                     simp only at h
+                     refine cast ?_ x.1.2.2.1
+                     simp_rw [← h.1, ← h.2, f]
+
+example (k l : ℕ) : Function.Injective (g k l) := by
+  intro x y
+  have hx := Prod.eq_iff_fst_eq_snd_eq.mp (Set.mem_singleton_iff.mp (Set.mem_preimage.mp x.2))
+  have hy := Prod.eq_iff_fst_eq_snd_eq.mp (Set.mem_singleton_iff.mp (Set.mem_preimage.mp y.2))
+  unfold f at hx hy
+  simp only at hx hy
+  intro h
+  unfold g at h
+  simp only at h
+  have hx1 := hx.1
+  ext
+  · rw [hx.1, hy.1]
+  · apply heq_of_cast_eq
+    sorry
+    sorry
 
 
-noncomputable def deriv (f : ContinuousMultilinearMap 𝕜 E F)
-(x : (i : ι) → E i) : ((i : ι) → E i) →L[𝕜] F :=
-Finset.sum Finset.univ (fun (i : ι) => (f.toContinuousLinearMap x i).comp (ContinuousLinearMap.proj i))
+theorem Set.Finite.of_finite_image_of_finite_fibers {α : Type*} {β : Type*} {s : Set α}
+    {f : α → β} (hfin1 : Set.Finite (f '' s)) (hfin2 : ∀ y ∈ f '' s, Set.Finite (f ⁻¹' {y})) :
+    Set.Finite s :=
+  Set.Finite.subset (Set.Finite.biUnion hfin1 hfin2) (fun x hx ↦ Set.mem_biUnion
+  (Set.mem_image_of_mem f hx) (by rw [Set.mem_preimage, Set.mem_singleton_iff]))
 
-lemma sub_piecewise_bound (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i)
-(h : (((i : ι) → (E i)) × ((i : ι) → E i)))
-{s : Finset ι} (hs : 2 ≤ s.card) :
-‖f (s.piecewise h.1 x) - f (s.piecewise h.2 x)‖ ≤ s.card • (‖f‖ *
-‖x‖ ^ sᶜ.card * ‖h‖ ^ (s.card - 1) * ‖h.1 - h.2‖) := by
-  letI : LinearOrder ι := WellFounded.wellOrderExtension emptyWf.wf
-  set n := s.card
-  convert (congr_arg norm (MultilinearMap.apply_sub f.toMultilinearMap h.1 h.2 x s rfl)).trans_le _
-  refine le_trans (norm_sum_le _ _) ?_
-  have heq : (Finset.univ (α := Fin n)).card = n := by simp only [Finset.card_fin]
-  rw [←heq, ←(Finset.sum_const (α := Fin n))]
-  apply Finset.sum_le_sum
-  intro i _
-  refine le_trans (ContinuousMultilinearMap.le_op_norm f _) ?_
-  rw [mul_assoc, mul_assoc]
-  refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
-  rw [←(Finset.prod_compl_mul_prod s)]
-  set m := s.orderIsoOfFin rfl i
-  rw [←(Finset.mul_prod_erase s _ m.2)]
-  simp only [m.2, dite_true]
-  conv => lhs
-          congr
-          rfl
-          congr
-          rw [OrderIso.symm_apply_apply]
-          simp only [lt_irrefl i, ite_false, ite_true]
-          rfl
-  have hle1aux : ∀ (j : ι), j ∈ sᶜ →
-    (fun k => ‖if hk : k ∈ s then
-          if (OrderIso.symm (Finset.orderIsoOfFin s rfl)) ⟨k, hk⟩ < i then h.1 k
-          else
-            if (OrderIso.symm (Finset.orderIsoOfFin s rfl)) ⟨k, hk⟩ = i then h.1 k - h.2 k
-            else h.2 k
-        else x k‖) j ≤ ‖x‖ := by
-    intro j hj
-    rw [Finset.mem_compl] at hj
-    simp only [hj, dite_false]
-    apply norm_le_pi_norm
-  have hle1 := Finset.prod_le_prod (s := sᶜ) (fun j _ => norm_nonneg _) hle1aux
-  rw [Finset.prod_const] at hle1
-  have hle2aux : ∀ (j : ι), j ∈ Finset.erase s m →
-    (fun k =>  ‖if hk : k ∈ s then
-    if (OrderIso.symm (Finset.orderIsoOfFin s rfl)) ⟨k, hk⟩ < i then h.1 k
-    else
-    if (OrderIso.symm (Finset.orderIsoOfFin s rfl)) ⟨k, hk⟩ = i then h.1 k - h.2 k
-    else h.2 k
-    else x k‖) j ≤ ‖h‖ := by
-    intro j hj
-    set hj' := Finset.mem_of_mem_erase hj
-    simp only [hj', dite_true]
-    by_cases hj'' : (s.orderIsoOfFin rfl).symm ⟨j, hj'⟩ < i
-    . simp only [hj'', ite_true]
-      refine le_trans ?_ (norm_fst_le h)
-      apply norm_le_pi_norm
-    . simp only [hj'', ite_false]
-      have hj''' : (s.orderIsoOfFin rfl).symm ⟨j, hj'⟩ ≠ i := by
-        by_contra habs
-        rw [Finset.mem_erase] at hj
-        simp only at hj
-        rw [←habs] at hj
-        simp only [OrderIso.apply_symm_apply, ne_eq, not_true_eq_false, false_and] at hj
-      simp only [hj''', ite_false, ge_iff_le]
-      refine le_trans ?_ (norm_snd_le h)
-      apply norm_le_pi_norm
-  have hle2 := Finset.prod_le_prod (s := s.erase m) (fun j _ => norm_nonneg _) hle2aux
-  rw [Finset.prod_const, Finset.card_erase_of_mem m.2] at hle2
-  refine le_trans (mul_le_mul_of_nonneg_right hle1 (mul_nonneg (norm_nonneg _)
-    (Finset.prod_nonneg (fun _ _ => norm_nonneg _)))) ?_
-  apply mul_le_mul
-  . apply le_refl (‖x‖ ^ sᶜ.card)
-  /- Error message:
-  tactic 'apply' failed, failed to unify
-  ‖x‖ ^ Finset.card sᶜ ≤ ‖x‖ ^ Finset.card sᶜ
-with
-  ‖x‖ ^ Finset.card sᶜ ≤ ‖x‖ ^ Finset.card sᶜ-/
+open Set in
+example (n : ℕ) :
+    Set.Finite {p : (k : ℕ) × (l : ℕ) × {s : Finset (Fin (k + l)) // s.card = l} |
+    p.1 < n ∧ p.2.1 < n} := by
+  set s := {p : (k : ℕ) × (l : ℕ) × {s : Finset (Fin (k + l)) // s.card = l} |
+      p.1 < n ∧ p.2.1 < n}
+  rw [Set.finite_def]
+  apply Nonempty.intro
+  set g : s → (k : Finset.range n) × (l : Finset.range n) ×
+        {s : Finset (Fin (k + l)) | s.card = l} := (fun p =>
+          ⟨⟨p.1.1, Finset.mem_range.mpr p.2.1⟩, ⟨p.1.2.1, Finset.mem_range.mpr p.2.2⟩, p.1.2.2⟩)
+  set h : (k : Finset.range n) × (l : Finset.range n) ×
+        {s : Finset (Fin (k + l)) | s.card = l} → s :=
+        fun p => by refine ⟨⟨p.1, p.2.1, p.2.2⟩, ?_⟩
+                    simp only [coe_setOf, mem_setOf_eq]
+                    exact ⟨Finset.mem_range.mp p.1.property, Finset.mem_range.mp p.2.1.property⟩
+  have h1 : ∀ x, h (g x) = x := by
+        intro ⟨p, hp⟩
+        simp only [coe_setOf, mem_setOf_eq, Sigma.eta]
+  have h2 : ∀ x, g (h x) = x := by
+        intro ⟨k, l, t⟩
+        simp only [coe_setOf, mem_setOf_eq, id_eq]
+  set e : s ≃ (k : Finset.range n) × (l : Finset.range n) ×
+        {s : Finset (Fin (k + l)) | s.card = l} :=
+        {toFun := g
+         invFun := h
+         left_inv := h1
+         right_inv := h2}
+  apply Fintype.ofEquiv _ e.symm
 
-end ContinuousMultilinearMap
+
+example (n : ℕ) :
+    Set.Finite {p : (k : ℕ) × (l : ℕ) × {s : Finset (Fin (k + l)) // s.card = l} |
+    p.1 < n ∧ p.2.1 < n} := by sorry
+
+
+example (k l : ℕ) : Function.Injective (g k l) := by
+  intro x y
+  have hx := Prod.eq_iff_fst_eq_snd_eq.mp (Set.mem_singleton_iff.mp (Set.mem_preimage.mp x.2))
+  have hy := Prod.eq_iff_fst_eq_snd_eq.mp (Set.mem_singleton_iff.mp (Set.mem_preimage.mp y.2))
+  unfold f at hx hy
+  simp only at hx hy
+  intro h
+  ext
+  · rw [hx.1, hy.1]
+  · apply heq_of_cast_eq
+    sorry
+
+open Set
+
+example (n : ℕ) :
+    Set.Finite {p : (k : ℕ) × (l : ℕ) × {s : Finset (Fin (k + l)) // s.card = l} |
+    p.1 < n ∧ p.2.1 < n} := by
+  set s := {p : (k : ℕ) × (l : ℕ) × {s : Finset (Fin (k + l)) // s.card = l} |
+      p.1 < n ∧ p.2.1 < n}
+  rw [Set.finite_def]
+  apply Nonempty.intro
+  set g : s → (k : Finset.range n) × (l : Finset.range n) ×
+        {s : Finset (Fin (k + l)) | s.card = l} := (fun p =>
+          ⟨⟨p.1.1, Finset.mem_range.mpr p.2.1⟩, ⟨p.1.2.1, Finset.mem_range.mpr p.2.2⟩, p.1.2.2⟩)
+  set h : (k : Finset.range n) × (l : Finset.range n) ×
+        {s : Finset (Fin (k + l)) | s.card = l} → s :=
+        fun p => by refine ⟨⟨p.1, p.2.1, p.2.2⟩, ?_⟩
+                    simp only [coe_setOf, mem_setOf_eq]
+                    exact ⟨Finset.mem_range.mp p.1.property, Finset.mem_range.mp p.2.1.property⟩
+  have h1 : ∀ x, h (g x) = x := by
+        intro ⟨p, hp⟩
+        simp only [coe_setOf, mem_setOf_eq, Sigma.eta]
+  have h2 : ∀ x, g (h x) = x := by
+        intro ⟨k, l, t⟩
+        simp only [coe_setOf, mem_setOf_eq, id_eq]
+  set e : s ≃ (k : Finset.range n) × (l : Finset.range n) ×
+        {s : Finset (Fin (k + l)) | s.card = l} :=
+        {toFun := g
+         invFun := h
+         left_inv := h1
+         right_inv := h2}
+  apply Fintype.ofEquiv _ e.symm

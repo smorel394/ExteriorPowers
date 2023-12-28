@@ -1,5 +1,5 @@
 import Mathlib.Tactic
-import Mathlib.Geometry.Manifold.ContMDiff
+import Mathlib.Geometry.Manifold.ContMDiff.Basic
 import Mathlib.LinearAlgebra.Basis
 import Mathlib.LinearAlgebra.PiTensorProduct
 

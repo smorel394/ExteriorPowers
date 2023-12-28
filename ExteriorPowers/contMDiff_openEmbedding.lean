@@ -1,5 +1,7 @@
 import Mathlib.Tactic
-import Mathlib.Geometry.Manifold.ContMDiff
+import Mathlib.Geometry.Manifold.ContMDiff.Atlas
+
+
 
 open Classical
 noncomputable section
@@ -14,12 +16,12 @@ lemma ContMDiffAt_vs_openEmbedding (f : M → α) (x : M) :
 @ContMDiffAt 𝕜 _ E _ _ H _ I M _ _ E' _ _ E' _ (modelWithCornersSelf 𝕜 E') α _
 (OpenEmbedding.singletonChartedSpace h) n f x ↔ ContMDiffAt I (modelWithCornersSelf 𝕜 E') (E' := E')
 (H' := E') n (j ∘ f) x := by
-  have hj : h.toLocalHomeomorph ∈ @SmoothManifoldWithCorners.maximalAtlas 𝕜 _ E' _ _ E' _
+  have hj : h.toPartialHomeomorph ∈ @SmoothManifoldWithCorners.maximalAtlas 𝕜 _ E' _ _ E' _
          (modelWithCornersSelf 𝕜 E') α _ (OpenEmbedding.singletonChartedSpace h):= by
         apply @SmoothManifoldWithCorners.subset_maximalAtlas 𝕜 _ E' _ _ E' _
          (modelWithCornersSelf 𝕜 E') α _ (OpenEmbedding.singletonChartedSpace h)
          (OpenEmbedding.singleton_smoothManifoldWithCorners _ h)
-        change _ ∈ {h.toLocalHomeomorph}
+        change _ ∈ {h.toPartialHomeomorph}
         simp only [Set.mem_singleton_iff]
   constructor
   . intro hdiff
@@ -27,29 +29,29 @@ lemma ContMDiffAt_vs_openEmbedding (f : M → α) (x : M) :
       (OpenEmbedding.singletonChartedSpace h)
     . apply @contMDiffAt_of_mem_maximalAtlas 𝕜 _ E' _ _ E' _ (modelWithCornersSelf 𝕜 E') α _
         (OpenEmbedding.singletonChartedSpace h) (OpenEmbedding.singleton_smoothManifoldWithCorners _ h)
-        h.toLocalHomeomorph (f x) n hj
-      rw [OpenEmbedding.toLocalHomeomorph_source j h]
+        h.toPartialHomeomorph (f x) n hj
+      rw [OpenEmbedding.toPartialHomeomorph_source j h]
       apply Set.mem_univ
     . exact hdiff
   . intro hdiff
-    have heq : f = (h.toLocalHomeomorph).symm ∘ (j ∘ f) := by
+    have heq : f = (h.toPartialHomeomorph).symm ∘ (j ∘ f) := by
       ext x
       simp only [Function.comp_apply]
       conv => rhs
               congr
               rfl
-              rw [←(OpenEmbedding.toLocalHomeomorph_apply j h)]
-      rw [(h.toLocalHomeomorph).left_inv]
-      rw [OpenEmbedding.toLocalHomeomorph_source j h]
+              rw [←(OpenEmbedding.toPartialHomeomorph_apply j h)]
+      rw [(h.toPartialHomeomorph).left_inv]
+      rw [OpenEmbedding.toPartialHomeomorph_source j h]
       exact Set.mem_univ _
     rw [heq]
     apply @ContMDiffAt.comp 𝕜 _ E _ _ H _ I M _ _ E' _ _ E' _ (modelWithCornersSelf 𝕜 E') E' _ _
       E' _ _ E' _ (modelWithCornersSelf 𝕜 E') α _ (OpenEmbedding.singletonChartedSpace h)
-      (j ∘ f) n (h.toLocalHomeomorph).symm
+      (j ∘ f) n (h.toPartialHomeomorph).symm
     . apply @contMDiffAt_symm_of_mem_maximalAtlas 𝕜 _ E' _ _ E' _ (modelWithCornersSelf 𝕜 E') α _
         (OpenEmbedding.singletonChartedSpace h) (OpenEmbedding.singleton_smoothManifoldWithCorners _ h)
-        h.toLocalHomeomorph n ((j ∘ f) x) hj
-      rw [OpenEmbedding.toLocalHomeomorph_target j h]
+        h.toPartialHomeomorph n ((j ∘ f) x) hj
+      rw [OpenEmbedding.toPartialHomeomorph_target j h]
       simp only [Function.comp_apply, Set.mem_range, exists_apply_eq_apply]
     . exact hdiff
 
@@ -58,12 +60,12 @@ lemma ContMDiff_vs_openEmbedding (f : M → α) :
 @ContMDiff 𝕜 _ E _ _ H _ I M _ _ E' _ _ E' _ (modelWithCornersSelf 𝕜 E') α _
 (OpenEmbedding.singletonChartedSpace h) n f ↔ ContMDiff I (modelWithCornersSelf 𝕜 E') (E' := E')
 (H' := E') n (j ∘ f) := by
-  have hj : h.toLocalHomeomorph ∈ @SmoothManifoldWithCorners.maximalAtlas 𝕜 _ E' _ _ E' _
+  have hj : h.toPartialHomeomorph ∈ @SmoothManifoldWithCorners.maximalAtlas 𝕜 _ E' _ _ E' _
          (modelWithCornersSelf 𝕜 E') α _ (OpenEmbedding.singletonChartedSpace h):= by
         apply @SmoothManifoldWithCorners.subset_maximalAtlas 𝕜 _ E' _ _ E' _
          (modelWithCornersSelf 𝕜 E') α _ (OpenEmbedding.singletonChartedSpace h)
          (OpenEmbedding.singleton_smoothManifoldWithCorners _ h)
-        change _ ∈ {h.toLocalHomeomorph}
+        change _ ∈ {h.toPartialHomeomorph}
         simp only [Set.mem_singleton_iff]
   constructor
   . intro hdiff
@@ -71,34 +73,34 @@ lemma ContMDiff_vs_openEmbedding (f : M → α) :
       (OpenEmbedding.singletonChartedSpace h)
     .  rw [←(@contMDiffOn_univ 𝕜 _ E' _ _ E' _ (modelWithCornersSelf 𝕜 E') α _
          (OpenEmbedding.singletonChartedSpace h))]
-       rw [←(OpenEmbedding.toLocalHomeomorph_source j h)]
+       rw [←(OpenEmbedding.toPartialHomeomorph_source j h)]
        exact @contMDiffOn_of_mem_maximalAtlas 𝕜 _ E' _ _ E' _ (modelWithCornersSelf 𝕜 E') α _
          (OpenEmbedding.singletonChartedSpace h) (OpenEmbedding.singleton_smoothManifoldWithCorners _ h)
-         h.toLocalHomeomorph n hj
+         h.toPartialHomeomorph n hj
     . exact hdiff
   . intro hdiff
-    have heq : f = (h.toLocalHomeomorph).symm ∘ (j ∘ f) := by
+    have heq : f = (h.toPartialHomeomorph).symm ∘ (j ∘ f) := by
       ext x
       simp only [Function.comp_apply]
       conv => rhs
               congr
               rfl
-              rw [←(OpenEmbedding.toLocalHomeomorph_apply j h)]
-      rw [(h.toLocalHomeomorph).left_inv]
-      rw [OpenEmbedding.toLocalHomeomorph_source j h]
+              rw [←(OpenEmbedding.toPartialHomeomorph_apply j h)]
+      rw [(h.toPartialHomeomorph).left_inv]
+      rw [OpenEmbedding.toPartialHomeomorph_source j h]
       exact Set.mem_univ _
     rw [heq]
     rw [←(@contMDiffOn_univ 𝕜 _ E _ _ H _ I M _ _ E' _ _ E' _ (modelWithCornersSelf 𝕜 E') α _
       (OpenEmbedding.singletonChartedSpace h))]
     apply @ContMDiffOn.comp 𝕜 _ E _ _ H _ I M _ _ E' _ _ E' _ (modelWithCornersSelf 𝕜 E') E' _ _
       E' _ _ E' _ (modelWithCornersSelf 𝕜 E') α _ (OpenEmbedding.singletonChartedSpace h)
-      (j ∘ f) Set.univ n (h.toLocalHomeomorph).target (h.toLocalHomeomorph).symm
+      (j ∘ f) Set.univ n (h.toPartialHomeomorph).target (h.toPartialHomeomorph).symm
     . exact @contMDiffOn_symm_of_mem_maximalAtlas 𝕜 _ E' _ _ E' _ (modelWithCornersSelf 𝕜 E') α _
          (OpenEmbedding.singletonChartedSpace h) (OpenEmbedding.singleton_smoothManifoldWithCorners _ h)
-         h.toLocalHomeomorph n hj
+         h.toPartialHomeomorph n hj
     . rw [contMDiffOn_univ]
       exact hdiff
-    . rw [OpenEmbedding.toLocalHomeomorph_target j h]
+    . rw [OpenEmbedding.toPartialHomeomorph_target j h]
       intro x
       simp only [Set.mem_univ, Set.mem_preimage, Function.comp_apply, Set.mem_range, exists_apply_eq_apply,
         forall_true_left]
