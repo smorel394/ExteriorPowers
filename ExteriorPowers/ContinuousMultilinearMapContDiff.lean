@@ -20,53 +20,86 @@ variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {ι : Type*} [Fintype ι]
 
 namespace MultilinearMap
 
+open Finset in
+lemma linearDeriv_bound (f : ContinuousMultilinearMap 𝕜 E F) (x y : (i : ι) → E i) :
+    ‖f.linearDeriv x y‖ ≤ ‖f‖ * (∑ i, (∏ j in univ.erase i, ‖x j‖)) * ‖y‖ := by
+  rw [linearDeriv_apply, mul_sum, sum_mul]
+  apply norm_sum_le_of_le
+  intro i _
+  refine le_trans ?_ (mul_le_mul_of_nonneg_left (norm_le_pi_norm y i) (mul_nonneg (norm_nonneg _)
+    (prod_nonneg (fun i _ ↦ norm_nonneg _))))
+  conv_rhs => congr; rfl; rw [← (Function.update_same i (y i) x)]
+  rw [mul_assoc, prod_congr rfl (g := fun j ↦ ‖Function.update x i (y i) j‖)
+    (fun _ hj ↦ by simp only; rw [Function.update_noteq (ne_of_mem_erase hj)]),
+    prod_erase_mul univ _ (Finset.mem_univ _)]
+  apply ContinuousMultilinearMap.le_op_norm
+
+open Finset in
 lemma domDomRestrict_bound (f : ContinuousMultilinearMap 𝕜 E F)
-    (s : Finset ι) (x : (i : ι) → E i) (z : (i : s) → E i) :
-    ‖f.domDomRestrict s (fun i => x i.1) z‖ ≤ ‖f‖ * (Finset.prod sᶜ (fun i => ‖x i‖)) *
-    (∏ i, ‖z i‖) := by
+    (s : Finset ι) (x : ((i : ↑↑(sᶜ)) → E i)) (z : (i : s) → E i) : ‖f.domDomRestrict s
+    (fun ⟨i, hi⟩ => x ⟨i, mem_compl.mpr (Set.not_mem_of_mem_compl hi)⟩) z‖
+    ≤ ‖f‖ * (∏ i, ‖x i‖) * (∏ i, ‖z i‖) := by
   rw [domDomRestrict_apply]
   refine le_trans (ContinuousMultilinearMap.le_op_norm _ _) ?_
   rw [mul_assoc]
   refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
-  rw [← (Finset.prod_compl_mul_prod s)]
-  refine mul_le_mul ?_ ?_ (Finset.prod_nonneg (fun _ _ => norm_nonneg _))
-    (Finset.prod_nonneg (fun _ _ => norm_nonneg _))
-  . apply Finset.prod_le_prod (fun _ _ => norm_nonneg _)
-    intro i hi
-    rw [Finset.mem_compl] at hi
-    simp only [Finset.mem_coe, hi, dite_false, le_refl]
-  . rw [← Finset.prod_coe_sort]
-    apply Finset.prod_le_prod (fun _ _ =>  norm_nonneg _)
-    intro i _
-    simp only [mem_coe, coe_mem, dite_true]
-    rfl
+  rw [← (prod_compl_mul_prod s)]
+  refine mul_le_mul ?_ ?_ (prod_nonneg (fun _ _ => norm_nonneg _))
+    (prod_nonneg (fun _ _ => norm_nonneg _))
+  all_goals (rw [← prod_coe_sort]; apply prod_le_prod (fun _ _ => norm_nonneg _))
+  · exact fun ⟨i, hi⟩ _ ↦ by rw [mem_compl] at hi; simp only [mem_coe, hi, dite_false, le_refl]
+  · exact fun i _ => by simp only [mem_coe, coe_mem, dite_true]; rfl
 
 end MultilinearMap
 
 namespace ContinuousMultilinearMap
 
 noncomputable def domDomRestrict (f : ContinuousMultilinearMap 𝕜 E F) (s : Finset ι)
-    (x : (i : ι) → E i) : ContinuousMultilinearMap 𝕜 (fun (i : s) => E i) F :=
-  MultilinearMap.mkContinuous (f.toMultilinearMap.domDomRestrict s (fun i  => x i.1))
-  (‖f‖ * (∏ i in sᶜ, ‖x i‖)) (MultilinearMap.domDomRestrict_bound f s x)
+    (x : (i : ↑↑sᶜ) → E i) : ContinuousMultilinearMap 𝕜 (fun (i : s) => E i) F :=
+  MultilinearMap.mkContinuous (f.toMultilinearMap.domDomRestrict s
+  (fun ⟨i, hi⟩ => x ⟨i, mem_compl.mpr (Set.not_mem_of_mem_compl hi)⟩))
+  (‖f‖ * (∏ i, ‖x i‖)) (MultilinearMap.domDomRestrict_bound f s x)
 
 @[simp]
-lemma domDomRestrict_apply (f : ContinuousMultilinearMap 𝕜 E F)
-(x : (i : ι) → E i) (s : Finset ι) (z : (i : s) → E i) :
-f.domDomRestrict s x z = f (fun i => if h : i ∈ s then z ⟨i, h⟩ else x i) := rfl
+lemma domDomRestrict_apply (f : ContinuousMultilinearMap 𝕜 E F) (s : Finset ι)
+    (x : (i : ↑↑sᶜ) → E i) (z : (i : s) → E i) :
+    f.domDomRestrict s x z = f (fun i => if h : i ∈ s then z ⟨i, h⟩ else
+    x ⟨i, Finset.mem_compl.mpr h⟩) := rfl
+
+lemma domDomRestrict_norm_le (f : ContinuousMultilinearMap 𝕜 E F) (s : Finset ι)
+    (x : (i : ↑↑sᶜ) → E i) : ‖f.domDomRestrict s x‖ ≤ ‖f‖ * (∏ i, ‖x i‖) :=
+  ContinuousMultilinearMap.op_norm_le_bound _ (mul_nonneg (norm_nonneg _) (prod_nonneg
+  (fun _ _ ↦ norm_nonneg _))) (fun z ↦ MultilinearMap.domDomRestrict_bound f s x z)
+
+open Finset in
+noncomputable def fderiv (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) :
+    ((i : ι) → E i) →L[𝕜] F :=
+  LinearMap.mkContinuous (f.toMultilinearMap.linearDeriv x)
+  (‖f‖ * ∑ i, (∏ j in univ.erase i, ‖x j‖)) (fun y ↦ MultilinearMap.linearDeriv_bound f x y)
+
+@[simp]
+lemma fderiv_apply (f : ContinuousMultilinearMap 𝕜 E F) (x y : (i : ι) → E i) :
+    f.fderiv x y = ∑ i, f (Function.update x i (y i)) := by
+  unfold fderiv
+  simp only [mem_univ, not_true_eq_false, LinearMap.mkContinuous_apply,
+    MultilinearMap.linearDeriv_apply, coe_coe]
+
+lemma fderiv_norm_le (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) :
+    ‖f.fderiv x‖ ≤ ‖f‖ * ∑ i, (∏ j in univ.erase i, ‖x j‖) :=
+  ContinuousLinearMap.op_norm_le_bound _ (mul_nonneg (norm_nonneg _) (sum_nonneg (fun _ _ ↦
+  (prod_nonneg (fun _ _ ↦ norm_nonneg _))))) (fun z ↦ MultilinearMap.linearDeriv_bound f x z)
 
 noncomputable def toFormalMultilinearSeries_term (f : ContinuousMultilinearMap 𝕜 E F)
     (x : (i : ι) → E i) (s : Finset ι) :
     ContinuousMultilinearMap 𝕜 (fun (_ : s) => ((i : ι) → E i)) F :=
-  compContinuousLinearMap (f.domDomRestrict s x) (fun ⟨i, _⟩ ↦ ContinuousLinearMap.proj i)
-
+  compContinuousLinearMap (f.domDomRestrict s (fun i ↦ x i))
+  (fun ⟨i, _⟩ ↦ ContinuousLinearMap.proj i)
 
 open Finset in
 noncomputable def toFormalMultilinearSeries [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
     (x : (i : ι) → E i) : FormalMultilinearSeries 𝕜 ((i : ι) → E i) F :=
   fun n ↦ (∑ s : univ.powersetCard n, (f.toFormalMultilinearSeries_term x s.1).domDomCongr
   (s.1.orderIsoOfFin (Finset.mem_powersetCard.mp s.2).2).toEquiv.symm)
-
 
 lemma toFormalMultilinearSeries_coe [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
     (x : (i : ι) → E i) (n : ℕ) : (f.toFormalMultilinearSeries x n).toMultilinearMap =
@@ -83,6 +116,7 @@ lemma toFormalMultilinearSeries_coe [LinearOrder ι] (f : ContinuousMultilinearM
   erw [MultilinearMap.domDomRestrict_apply]
   simp only [mem_coe, coe_coe]
 
+@[simp]
 lemma toFormalMultilinearSeries_coe_apply [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
     (x : (i : ι) → E i) (n : ℕ) (z : Fin n → ((i : ι) → E i)) :
     f.toFormalMultilinearSeries x n z = f.toFormalMultilinearSeries_fixedDegree x n z := by
@@ -96,7 +130,6 @@ lemma toFormalMultilinearSeries_support [LinearOrder ι] (f : ContinuousMultilin
   rw [toMultilinearMap_zero, toFormalMultilinearSeries_coe]
   exact f.toFormalMultilinearSeriest_fixedDegree_zero x hn
 
--- Is this useful ?
 lemma toFormalMultilinearSeries_radius [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
     (x : (i : ι) → E i) : (f.toFormalMultilinearSeries x).radius = ⊤ :=
   FormalMultilinearSeries.radius_eq_top_of_forall_image_add_eq_zero _ (Fintype.card ι).succ
@@ -129,6 +162,18 @@ lemma analyticAt (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) 
   exact HasFPowerSeriesOnBall.analyticAt (f.hasFPowerSeries x)
 
 variable [CompleteSpace F]
+
+lemma fderiv_eq (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) :
+    _root_.fderiv 𝕜 f x = f.fderiv x := by
+  letI : LinearOrder ι := WellFounded.wellOrderExtension emptyWf.wf
+  ext y
+  rw [(f.hasFPowerSeries x).hasFPowerSeriesAt.fderiv_eq, fderiv_apply]
+  simp only [continuousMultilinearCurryFin1_apply, Matrix.zero_empty,
+    toFormalMultilinearSeries_coe_apply]
+  rw [← MultilinearMap.linearDeriv_eq_toFormalMultilinearSeries_degreeOne]
+  simp only [Fin.zero_eta, MultilinearMap.ofSubsingleton_apply_apply,
+    MultilinearMap.linearDeriv_apply, coe_coe]
+  exact Finset.sum_congr rfl (fun _ _ ↦ by congr)
 
 lemma contDiffAt (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) {n : ℕ∞} :
     ContDiffAt 𝕜 n f x := AnalyticAt.contDiffAt (f.analyticAt x)
