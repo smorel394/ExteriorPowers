@@ -72,6 +72,7 @@ lemma domDomRestrict_apply [DecidableEq ι] (f : MultilinearMap R M₁ M₂)
     (x : (i : s.compl) → M₁ i) (z : (i : s) → M₁ i) :
     f.domDomRestrict s x z = f (fun i => if h : i ∈ s then z ⟨i, h⟩ else x ⟨i, h⟩) := rfl
 
+/-
 open Finset in
 /-- This is the nth term of a formal multilinear series corresponding to the multilinear map `f`.
 We use a linear order on ι to identify all finsets of `ι` of cardinality `n` to `Fin n`.-/
@@ -120,7 +121,7 @@ lemma toFormalMultilinearSeries_partialSum [DecidableEq ι] [Fintype ι] [Linear
   rw [Finset.sum_subtype (f := fun (s : Finset ι) => f (s.piecewise y x))]
   exact fun _ => by simp only [Finset.mem_univ, forall_true_left, Finset.univ_filter_card_eq,
     gt_iff_lt, Finset.mem_powersetCard_univ, Finset.powerset_univ]
-
+-/
 
 /-- The "derivative" of a multilinear map, as a linear map from `(i : ι) → M₁` to `M₂`.
 For continuous multilinear maps, this will indeed be the derivative. This is equal to the degree
@@ -138,6 +139,7 @@ lemma linearDeriv_apply [DecidableEq ι] [Fintype ι] (f : MultilinearMap R M₁
   simp only [LinearMap.coeFn_sum, LinearMap.coe_comp, LinearMap.coe_proj, Finset.sum_apply,
     Function.comp_apply, Function.eval, toLinearMap_apply]
 
+/-
 /-- The equality between the derivarive of `f` and the degree one part of its formal
 multilinear series.-/
 lemma linearDeriv_eq_toFormalMultilinearSeries_degreeOne
@@ -162,6 +164,7 @@ lemma linearDeriv_eq_toFormalMultilinearSeries_degreeOne
       gt_iff_lt, Nat.lt_one_iff, Finset.card_eq_zero, Finset.mem_powersetCard_univ] at hs
     rw [Finset.card_eq_one] at hs
     existsi Classical.choose hs; existsi Finset.mem_univ _; exact Classical.choose_spec hs
+-/
 
 end MultilinearMap
 
