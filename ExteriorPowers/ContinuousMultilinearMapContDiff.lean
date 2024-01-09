@@ -195,19 +195,7 @@ lemma fderiv_eq (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) :
         simp only [mem_univ, not_true_eq_false, card_erase_of_mem, card_fin, ge_iff_le,
           add_le_iff_nonpos_right, nonpos_iff_eq_zero, tsub_eq_zero_iff_le, add_tsub_cancel_left]
       rw [Finset.sum_bij I (fun _ _ ↦ Finset.mem_univ _)]
-      · intro i _
-        rw [FormalMultilinearSeries.changeOriginSeriesTerm_apply, toFormalMultilinearSeries]
-        simp only [ge_iff_le, Eq.symm hcard, dite_true, piecewise_erase_univ, domDomCongr_apply,
-          ne_eq, EmbeddingLike.apply_eq_iff_eq, compContinuousLinearMap_apply, proj_apply]
-        congr
-        ext j
-        by_cases hj : j = i
-        · rw [hj, Function.update_same, Function.update_same]
-        · have hne : Fintype.equivFinOfCardEq hcard j ≠ Fintype.equivFinOfCardEq hcard i := by
-            rw [ne_eq, Equiv.apply_eq_iff_eq]
-            exact hj
-          rw [Function.update_noteq hne, Function.update_noteq hj]
-      · intro i j _ _
+      · intro _ _ _ _
         simp only [mem_univ, not_true_eq_false, Subtype.mk.injEq,
           Finset.erase_inj _ (Finset.mem_univ _), Equiv.apply_eq_iff_eq, imp_self]
       · intro ⟨s, hs⟩ _
@@ -222,6 +210,18 @@ lemma fderiv_eq (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) :
         simp only [mem_univ, not_true_eq_false, Equiv.apply_symm_apply, Subtype.mk.injEq]
         rw [Finset.erase_eq, ← ha]
         simp only [sdiff_compl, ge_iff_le, le_eq_subset, subset_univ, inf_of_le_right]
+      · intro i _
+        rw [FormalMultilinearSeries.changeOriginSeriesTerm_apply, toFormalMultilinearSeries]
+        simp only [ge_iff_le, Eq.symm hcard, dite_true, piecewise_erase_univ, domDomCongr_apply,
+          ne_eq, EmbeddingLike.apply_eq_iff_eq, compContinuousLinearMap_apply, proj_apply]
+        congr
+        ext j
+        by_cases hj : j = i
+        · rw [hj, Function.update_same, Function.update_same]
+        · have hne : Fintype.equivFinOfCardEq hcard j ≠ Fintype.equivFinOfCardEq hcard i := by
+            rw [ne_eq, Equiv.apply_eq_iff_eq]
+            exact hj
+          rw [Function.update_noteq hne, Function.update_noteq hj]
   · intro m hm
     rw [cOS f (k := 1) (l := m), ContinuousMultilinearMap.zero_apply]
     by_contra habs
