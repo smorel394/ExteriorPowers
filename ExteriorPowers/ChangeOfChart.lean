@@ -19,17 +19,17 @@ variable {𝕜 E U : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E
 def ChangeOfChart (φ ψ : E ≃L[𝕜] (Fin r → 𝕜) × U) : ((Fin r → 𝕜) →L[𝕜] U) → ((Fin r → 𝕜) →L[𝕜] U) :=
 (Chart φ) ∘ (InverseChart ψ)
 
-lemma ChangeOfChartDomain (φ ψ : E ≃L[𝕜] (Fin r → 𝕜) × U) : (LocalHomeomorph.trans (LocalHomeomorph.symm
-(Chart_LocalHomeomorph ψ)) (Chart_LocalHomeomorph φ)).toLocalEquiv.source =
+lemma ChangeOfChartDomain (φ ψ : E ≃L[𝕜] (Fin r → 𝕜) × U) : (PartialHomeomorph.trans (PartialHomeomorph.symm
+(Chart_PartialHomeomorph ψ)) (Chart_PartialHomeomorph φ)).toPartialEquiv.source =
 {f : ((Fin r → 𝕜) →L[𝕜] U) | Submodule.map ψ.symm (LinearMap.graph f) ⊓
 LinearMap.ker ((ContinuousLinearMap.fst 𝕜 (Fin r → 𝕜) U).comp φ.toContinuousLinearMap) = ⊥} := by
   ext f
-  simp only [LocalHomeomorph.trans_toLocalEquiv, LocalHomeomorph.symm_toLocalEquiv, LocalEquiv.trans_source,
-    LocalEquiv.symm_source, LocalHomeomorph.coe_coe_symm, Set.mem_inter_iff, Set.mem_preimage, ge_iff_le,
+  simp only [PartialHomeomorph.trans_toPartialEquiv, PartialHomeomorph.symm_toPartialEquiv, PartialEquiv.trans_source,
+    PartialEquiv.symm_source, PartialHomeomorph.coe_coe_symm, Set.mem_inter_iff, Set.mem_preimage, ge_iff_le,
     Set.mem_setOf_eq]
-  unfold Chart_LocalHomeomorph Chart_LocalEquiv
+  unfold Chart_PartialHomeomorph Chart_PartialEquiv
   simp only [Set.top_eq_univ, Set.mem_univ, ContinuousLinearMap.coe_comp, ContinuousLinearMap.coe_fst,
-    LocalHomeomorph.mk_coe_symm, LocalEquiv.coe_symm_mk, true_and, ge_iff_le]
+    PartialHomeomorph.mk_coe_symm, PartialEquiv.coe_symm_mk, true_and, ge_iff_le]
   unfold InverseChart Goodset
   simp only [ge_iff_le, Set.mem_setOf_eq]
   rfl

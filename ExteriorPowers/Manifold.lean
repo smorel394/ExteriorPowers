@@ -35,11 +35,11 @@ def LinearIndependentToAll : OpenEmbedding (fun v : {v : I → E // LinearIndepe
 variable [Nonempty {v : I → E // LinearIndependent 𝕜 v}]
 
 lemma LinearIndependentToAll.inverse {v : I → E} (hv : LinearIndependent 𝕜 v) :
-v = (OpenEmbedding.toLocalHomeomorph (fun v => v.1) (LinearIndependentToAll 𝕜 E I)).symm v := by
+v = (OpenEmbedding.toPartialHomeomorph (fun v => v.1) (LinearIndependentToAll 𝕜 E I)).symm v := by
   have heq : v = (fun v => v.1) (⟨v, hv⟩ : {v : I → E // LinearIndependent 𝕜 v}) := by simp only
   nth_rewrite 2 [heq]
-  nth_rewrite 2 [←(OpenEmbedding.toLocalHomeomorph_apply _ (LinearIndependentToAll 𝕜 E I))]
-  rw [LocalHomeomorph.left_inv]
+  nth_rewrite 2 [←(OpenEmbedding.toPartialHomeomorph_apply _ (LinearIndependentToAll 𝕜 E I))]
+  rw [PartialHomeomorph.left_inv]
   tauto
 
 variable {𝕜 E I}
@@ -50,14 +50,14 @@ noncomputable instance instChartedSpaceLinearIndependent : ChartedSpace (I → E
 
 
 lemma LinearIndependent.chartAt (v : {v : I → E // LinearIndependent 𝕜 v}) :
-instChartedSpaceLinearIndependent.chartAt v = OpenEmbedding.toLocalHomeomorph (fun v => v.1)
+instChartedSpaceLinearIndependent.chartAt v = OpenEmbedding.toPartialHomeomorph (fun v => v.1)
 (LinearIndependentToAll 𝕜 E I) := by tauto
 
 
 lemma LinearIndependent.chartAt.target (v : {v : I → E // LinearIndependent 𝕜 v}) :
-LocalEquiv.target (LocalHomeomorph.toLocalEquiv (instChartedSpaceLinearIndependent.2 v)) =
+PartialEquiv.target (PartialHomeomorph.toPartialEquiv (instChartedSpaceLinearIndependent.2 v)) =
 {v : I → E // LinearIndependent 𝕜 v} := by
-  rw [LinearIndependent.chartAt, OpenEmbedding.toLocalHomeomorph_target]
+  rw [LinearIndependent.chartAt, OpenEmbedding.toPartialHomeomorph_target]
   simp only [ne_eq, Set.coe_setOf, Set.mem_setOf_eq, Subtype.range_coe_subtype]
 
 
@@ -164,19 +164,19 @@ W ∈ Goodset ((ContinuousLinearMap.fst 𝕜 (Fin r → 𝕜) U).comp (PhiForCha
   exact ⟨huW, hu⟩
 
 
-noncomputable def ChartAt (W : Grassmannian 𝕜 E r) : LocalHomeomorph (Grassmannian 𝕜 E r) ((Fin r → 𝕜) →L[𝕜] U) :=
-Chart_LocalHomeomorph (PhiForChart ε W)
+noncomputable def ChartAt (W : Grassmannian 𝕜 E r) : PartialHomeomorph (Grassmannian 𝕜 E r) ((Fin r → 𝕜) →L[𝕜] U) :=
+Chart_PartialHomeomorph (PhiForChart ε W)
 
 lemma ChartAt_source (W : Grassmannian 𝕜 E r) :
 (ChartAt ε W).source = Goodset ((ContinuousLinearMap.fst 𝕜 (Fin r → 𝕜) U).comp
 (PhiForChart ε W).toContinuousLinearMap) := by
-  unfold ChartAt Chart_LocalHomeomorph Chart_LocalEquiv
+  unfold ChartAt Chart_PartialHomeomorph Chart_PartialEquiv
   simp only [ContinuousLinearMap.coe_comp, ContinuousLinearMap.coe_fst]
 
 
 noncomputable def ChartedSpaceGrassmannian : ChartedSpace ((Fin r → 𝕜) →L[𝕜] U) (Grassmannian 𝕜 E r) :=
 {
-  atlas := {f | ∃ (φ : E ≃L[𝕜] (Fin r → 𝕜) × U), f = Chart_LocalHomeomorph φ}
+  atlas := {f | ∃ (φ : E ≃L[𝕜] (Fin r → 𝕜) × U), f = Chart_PartialHomeomorph φ}
   chartAt := fun W => ChartAt ε W
   mem_chart_source := fun W => by rw [ChartAt_source ε W]; exact PhiForChart_prop ε W
   chart_mem_atlas := fun W => by unfold ChartAt; simp only [Set.mem_setOf_eq]
@@ -242,7 +242,7 @@ variable {𝕜 E r}
 noncomputable instance instChartedSpaceGrassmannian :
 ChartedSpace ((Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r)) (Grassmannian 𝕜 E r) :=
 {
-  atlas := {f | ∃ (φ : E ≃L[𝕜] (Fin r → 𝕜) × (ModelSpace 𝕜 E r)), f = Chart_LocalHomeomorph φ}
+  atlas := {f | ∃ (φ : E ≃L[𝕜] (Fin r → 𝕜) × (ModelSpace 𝕜 E r)), f = Chart_PartialHomeomorph φ}
   chartAt := fun W => ChartAt (Epsilon 𝕜 E r) W
   mem_chart_source := fun W => by rw [ChartAt_source (Epsilon 𝕜 E r) W]; exact PhiForChart_prop (Epsilon 𝕜 E r) W
   chart_mem_atlas := fun W => by unfold ChartAt; simp only [Set.mem_setOf_eq]

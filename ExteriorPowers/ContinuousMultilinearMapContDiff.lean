@@ -27,24 +27,21 @@ lemma linearDeriv_bound (f : ContinuousMultilinearMap 𝕜 E F) (x y : (i : ι) 
     ‖f.linearDeriv x y‖ ≤ ‖f‖ * (∑ i, (∏ j in univ.erase i, ‖x j‖)) * ‖y‖ := by
   rw [linearDeriv_apply, mul_sum, sum_mul]
   apply norm_sum_le_of_le
-  intro i _
-  refine le_trans ?_ (mul_le_mul_of_nonneg_left (norm_le_pi_norm y i) (mul_nonneg (norm_nonneg _)
-    (prod_nonneg (fun i _ ↦ norm_nonneg _))))
+  refine' fun i _ ↦ le_trans ?_ (mul_le_mul_of_nonneg_left (norm_le_pi_norm y i) (mul_nonneg
+    (norm_nonneg _) (prod_nonneg (fun i _ ↦ norm_nonneg _))))
   conv_rhs => congr; rfl; rw [← (Function.update_same i (y i) x)]
   rw [mul_assoc, prod_congr rfl (g := fun j ↦ ‖Function.update x i (y i) j‖)
     (fun _ hj ↦ by simp only; rw [Function.update_noteq (ne_of_mem_erase hj)]),
     prod_erase_mul univ _ (Finset.mem_univ _)]
   apply ContinuousMultilinearMap.le_op_norm
 
-open Finset in
+open Finset ContinuousMultilinearMap in
 lemma domDomRestrict_bound (f : ContinuousMultilinearMap 𝕜 E F)
     (s : Finset ι) (x : ((i : ↑↑(sᶜ)) → E i)) (z : (i : s) → E i) : ‖f.domDomRestrict s
     (fun ⟨i, hi⟩ => x ⟨i, mem_compl.mpr (Set.not_mem_of_mem_compl hi)⟩) z‖
     ≤ ‖f‖ * (∏ i, ‖x i‖) * (∏ i, ‖z i‖) := by
-  rw [domDomRestrict_apply]
-  refine le_trans (ContinuousMultilinearMap.le_op_norm _ _) ?_
-  rw [mul_assoc]
-  refine mul_le_mul_of_nonneg_left ?_ (norm_nonneg _)
+  rw [domDomRestrict_apply, mul_assoc]
+  refine le_trans (le_op_norm _ _) (mul_le_mul_of_nonneg_left ?_ (norm_nonneg _))
   rw [← (prod_compl_mul_prod s)]
   refine mul_le_mul ?_ ?_ (prod_nonneg (fun _ _ => norm_nonneg _))
     (prod_nonneg (fun _ _ => norm_nonneg _))
@@ -82,8 +79,7 @@ noncomputable def fderiv (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) �
 @[simp]
 lemma fderiv_apply (f : ContinuousMultilinearMap 𝕜 E F) (x y : (i : ι) → E i) :
     f.fderiv x y = ∑ i, f (Function.update x i (y i)) := by
-  unfold fderiv
-  simp only [mem_univ, not_true_eq_false, LinearMap.mkContinuous_apply,
+  simp only [fderiv, mem_univ, not_true_eq_false, LinearMap.mkContinuous_apply,
     MultilinearMap.linearDeriv_apply, coe_coe]
 
 lemma fderiv_norm_le (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) :
@@ -102,8 +98,7 @@ noncomputable def toFormalMultilinearSeries [LinearOrder ι]
 lemma toFormalMultilinearSeries_support [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F)
     {n : ℕ} (hn : (Fintype.card ι).succ ≤ n) :
     f.toFormalMultilinearSeries n = 0 := by
-  unfold toFormalMultilinearSeries
-  simp only [Ne.symm (ne_of_lt (Nat.lt_of_succ_le hn)), dite_false]
+  simp only [toFormalMultilinearSeries, Ne.symm (ne_of_lt (Nat.lt_of_succ_le hn)), dite_false]
 
 lemma toFormalMultilinearSeries_radius [LinearOrder ι]
     (f : ContinuousMultilinearMap 𝕜 E F) : f.toFormalMultilinearSeries.radius = ⊤ :=
@@ -122,11 +117,10 @@ lemma toFormalMultilinearSeries_hasSum [LinearOrder ι] (f : ContinuousMultiline
     (x : (i : ι) → E i) : HasSum (fun (n : ℕ) => (f.toFormalMultilinearSeries n)
     fun (_ : Fin n) => x) (f x) := by
   rw [toFormalMultilinearSeries_partialSum]
-  apply hasSum_sum_of_ne_finset_zero
-  intro _ hn
-  simp only [Finset.mem_range, not_lt] at hn
-  rw [f.toFormalMultilinearSeries_support (lt_of_lt_of_le (Nat.lt_succ_self _) hn),
-    zero_apply]
+  exact hasSum_sum_of_ne_finset_zero
+    (fun _ hn ↦ by simp only [Finset.mem_range, not_lt] at hn
+                   rw [f.toFormalMultilinearSeries_support (lt_of_lt_of_le
+                        (Nat.lt_succ_self _) hn), zero_apply])
 
 def hasFPowerSeriesAtOrigin [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F) :
     HasFPowerSeriesOnBall f f.toFormalMultilinearSeries 0 ⊤  where
@@ -153,12 +147,9 @@ lemma cOS [LinearOrder ι] (f : ContinuousMultilinearMap 𝕜 E F) {k l : ℕ}
     (h : k + l ≠ Fintype.card ι) :
     f.toFormalMultilinearSeries.changeOriginSeries k l = 0 := by
   unfold FormalMultilinearSeries.changeOriginSeries
-  apply Finset.sum_eq_zero
-  intro s _
-  unfold FormalMultilinearSeries.changeOriginSeriesTerm
-  rw [AddEquivClass.map_eq_zero_iff]
-  unfold toFormalMultilinearSeries
-  simp only [h, dite_false]
+  exact Finset.sum_eq_zero (fun _ _ ↦ by
+    rw [FormalMultilinearSeries.changeOriginSeriesTerm, AddEquivClass.map_eq_zero_iff]
+    simp only [toFormalMultilinearSeries, h, dite_false])
 
 lemma fderiv_eq (f : ContinuousMultilinearMap 𝕜 E F) (x : (i : ι) → E i) :
     _root_.fderiv 𝕜 f x = f.fderiv x := by

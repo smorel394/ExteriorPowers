@@ -15,15 +15,13 @@ variable (K V : Type*) [DivisionRing K] [AddCommGroup V] [Module K V] (I : Type*
 dimension r.-/
 
 def Grassmannian :=
-{W : Submodule K V | FiniteDimensional K W ∧ FiniteDimensional.finrank K W = r}
-
+  {W : Submodule K V | FiniteDimensional K W ∧ FiniteDimensional.finrank K W = r}
 
 /- Second definition of the Grassmannian, as a quotient.-/
 
 /-- The setoid whose quotient is the I-grassmannian of `V`. -/
 def grassmannianSetoid : Setoid { v : I → V // LinearIndependent K v} :=
-Setoid.comap (fun v => Submodule.span K (Set.range v.1))
-⟨(· = ·), eq_equivalence⟩
+  Setoid.comap (fun v => Submodule.span K (Set.range v.1)) ⟨(· = ·), eq_equivalence⟩
 
 /-- The I-grassmannian of the `K`-vector space `V`.-/
 def QGrassmannian := Quotient (grassmannianSetoid K V I)
@@ -41,14 +39,13 @@ def QGrassmannian.mk' (v : { v : I → V // LinearIndependent K v }) : QGrassman
 
 @[simp]
 theorem QGrassmannian.mk'_eq_mk (v : { v : I → V // LinearIndependent K v}) :
-QGrassmannian.mk' K v = QGrassmannian.mk K v.1 v.2 := rfl
+    QGrassmannian.mk' K v = QGrassmannian.mk K v.1 v.2 := rfl
 
 variable {K}
 
 /-- Choose a representative of `x : Grassmannian K V I` in `V`. -/
 protected noncomputable def QGrassmannian.rep (x : QGrassmannian K V I) : I → V :=
   x.out'
-
 
 theorem QGrassmannian.rep_linearIndependent (x : QGrassmannian K V I) :
 LinearIndependent K x.rep  :=
@@ -61,9 +58,9 @@ QGrassmannian.mk K x.rep x.rep_linearIndependent = x := Quotient.out_eq' _
 variable (K)
 
 lemma QGrassmannian.mk_eq_mk_iff_span (v w : I → V) (hv : LinearIndependent K v)
-(hw : LinearIndependent K w) :
-QGrassmannian.mk K v hv = QGrassmannian.mk K w hw ↔
-Submodule.span K (Set.range v) = Submodule.span K (Set.range w) := by
+    (hw : LinearIndependent K w) :
+    QGrassmannian.mk K v hv = QGrassmannian.mk K w hw ↔
+    Submodule.span K (Set.range v) = Submodule.span K (Set.range w) := by
   unfold QGrassmannian.mk
   change (Setoid.ker (@Quotient.mk'' _ (grassmannianSetoid K V I))).r _ _  ↔ _
   rw [Setoid.ker_mk_eq]
@@ -71,14 +68,13 @@ Submodule.span K (Set.range v) = Submodule.span K (Set.range w) := by
   change Submodule.span K (Set.range v) = _ ↔ _
   simp only
 
-
 def MatrixAction (f : (I → K) →ₗ[K] (I → K)) (v : I → V) : I -> V :=
   (Basis.constr (M' := V) (Pi.basisFun K I) ℤ).invFun
     ((Basis.constr (Pi.basisFun K I) ℤ  v).comp f)
 
 lemma MatrixAction_vs_comp (f : (I → K) →ₗ[K] (I → K)) (v w : I → V) :
-v = MatrixAction K f w ↔ Basis.constr (Pi.basisFun K I) ℤ v =
-  (Basis.constr (Pi.basisFun K I) ℤ w).comp f := by
+    v = MatrixAction K f w ↔ Basis.constr (Pi.basisFun K I) ℤ v =
+    (Basis.constr (Pi.basisFun K I) ℤ w).comp f := by
   unfold MatrixAction
   constructor
   . intro h
@@ -95,7 +91,7 @@ lemma MatrixAction_id (v : I → V) : MatrixAction K LinearMap.id v = v := by
   simp only [LinearMap.comp_id, LinearEquiv.invFun_eq_symm, LinearEquiv.symm_apply_apply]
 
 lemma MatrixAction_mul (f g : (I → K) →ₗ[K] (I → K)) (v : I → V) :
-MatrixAction K (f.comp g) v = MatrixAction K g (MatrixAction K f v) := by
+    MatrixAction K (f.comp g) v = MatrixAction K g (MatrixAction K f v) := by
   unfold MatrixAction
   simp only [LinearEquiv.invFun_eq_symm, LinearEquiv.apply_symm_apply, EmbeddingLike.apply_eq_iff_eq]
   apply LinearMap.comp_assoc

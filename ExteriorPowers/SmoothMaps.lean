@@ -137,12 +137,12 @@ ContMDiff (modelWithCornersSelf 𝕜 (Fin r → E)) (E' := (Fin r → 𝕜) →L
   apply ContMDiffOn.comp (g := InverseChart φ) (E' := ((Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r)))
     (I' := modelWithCornersSelf 𝕜 ((Fin r → 𝕜) →L[𝕜] (ModelSpace 𝕜 E r))) (t := ⊤)
   . have h1 : InverseChart φ = (instChartedSpaceGrassmannian.chartAt (Grassmannian.mk' 𝕜 v)).symm := by
-      unfold ChartedSpace.chartAt instChartedSpaceGrassmannian ChartAt Chart_LocalHomeomorph Chart_LocalEquiv
-      simp only [mk'_eq_mk, ContinuousLinearMap.coe_comp, Set.top_eq_univ, LocalHomeomorph.mk_coe_symm,
-        LocalEquiv.coe_symm_mk]
+      unfold ChartedSpace.chartAt instChartedSpaceGrassmannian ChartAt Chart_PartialHomeomorph Chart_PartialEquiv
+      simp only [mk'_eq_mk, ContinuousLinearMap.coe_comp, Set.top_eq_univ, PartialHomeomorph.mk_coe_symm,
+        PartialEquiv.coe_symm_mk]
     rw [h1]
-    have h2 : ⊤ = (instChartedSpaceGrassmannian.chartAt (Grassmannian.mk' 𝕜 v)).toLocalEquiv.target := by
-      unfold ChartedSpace.chartAt instChartedSpaceGrassmannian ChartAt Chart_LocalHomeomorph Chart_LocalEquiv
+    have h2 : ⊤ = (instChartedSpaceGrassmannian.chartAt (Grassmannian.mk' 𝕜 v)).toPartialEquiv.target := by
+      unfold ChartedSpace.chartAt instChartedSpaceGrassmannian ChartAt Chart_PartialHomeomorph Chart_PartialEquiv
       simp only [Set.top_eq_univ]
     rw [h2]
     apply contMDiffOn_chart_symm (I := ModelGrassmannian 𝕜 (ModelSpace 𝕜 E r) r)
@@ -226,7 +226,7 @@ lemma SmoothAt.mapFromGrassmannian {F : Type*} [NormedAddCommGroup F] [NormedSpa
       rw [contMDiffAt_iff_contDiffAt]
       apply ContDiff.contDiffAt
       apply ContDiff.of_le (InverseChartLiftSmooth φ) le_top
-    . have heq : Chart φ = (Chart_LocalHomeomorph φ).toFun := rfl
+    . have heq : Chart φ = (Chart_PartialHomeomorph φ).toFun := rfl
       rw [heq]
       apply contMDiffAt_of_mem_maximalAtlas
       . apply SmoothManifoldWithCorners.subset_maximalAtlas
@@ -235,7 +235,7 @@ lemma SmoothAt.mapFromGrassmannian {F : Type*} [NormedAddCommGroup F] [NormedSpa
           Set.mem_setOf_eq]
         existsi φ
         rfl
-      . unfold Chart_LocalHomeomorph Chart_LocalEquiv
+      . unfold Chart_PartialHomeomorph Chart_PartialEquiv
         simp only
         exact hφ.1
 
@@ -332,7 +332,7 @@ ContMDiffAt (ModelWithCorners.prod I' (ModelGrassmannian 𝕜 (ModelSpace 𝕜 E
         rw [contMDiffAt_iff_contDiffAt]
         apply ContDiff.contDiffAt
         apply ContDiff.of_le (InverseChartLiftSmooth φ) le_top
-      . have heq : Chart φ = (Chart_LocalHomeomorph φ).toFun := rfl
+      . have heq : Chart φ = (Chart_PartialHomeomorph φ).toFun := rfl
         rw [heq]
         apply contMDiffAt_of_mem_maximalAtlas
         . apply SmoothManifoldWithCorners.subset_maximalAtlas
@@ -341,7 +341,7 @@ ContMDiffAt (ModelWithCorners.prod I' (ModelGrassmannian 𝕜 (ModelSpace 𝕜 E
             Set.mem_setOf_eq]
           existsi φ
           rfl
-        . unfold Chart_LocalHomeomorph Chart_LocalEquiv
+        . unfold Chart_PartialHomeomorph Chart_PartialEquiv
           simp only
           exact hφ.1
 

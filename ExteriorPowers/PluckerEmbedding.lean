@@ -62,7 +62,7 @@ local instance instNonEmptyGrass2 : Nonempty (Grassmannian 𝕜 (ExteriorPower �
 (NonemptyGrassmannian_iff 𝕜 (ExteriorPower 𝕜 E n) (I := {s : Finset (Fin r) // Finset.card s = n})
   (r := Nat.choose r n) (by rw [Fintype.card_finset_len, Fintype.card_fin])).mp inferInstance
 
-variable [SeparatingDual 𝕜 (ExteriorPower 𝕜 E n)]
+variable [SeparatingDual 𝕜 (ExteriorPower 𝕜 E n)] [CompleteSpace (ExteriorPower 𝕜 E n)]
 
 lemma Smooth.pluckerMapLift : ContMDiff (modelWithCornersSelf 𝕜 (Fin r → E))
 (modelWithCornersSelf 𝕜 ({s : Finset (Fin r) // Finset.card s = n} → (ExteriorPower 𝕜 E n)))
@@ -88,7 +88,9 @@ lemma Smooth.pluckerMapLift : ContMDiff (modelWithCornersSelf 𝕜 (Fin r → E)
       ExteriorPower.ιMulti_continuous_apply]
   rw [heq, contMDiff_iff_contDiff]
   refine ContDiff.comp ?_ ?_
-  . apply ContinuousMultilinearMap.contDiff
+  . rw [contDiff_iff_contDiffAt]
+    intro x
+    apply ContinuousMultilinearMap.contDiffAt
   . rw [contDiff_pi]
     intro i
     apply contDiff_apply

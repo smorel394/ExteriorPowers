@@ -1,5 +1,5 @@
 import Mathlib.Tactic
-import Mathlib.Analysis.NormedSpace.Multilinear
+import Mathlib.Analysis.NormedSpace.Multilinear.Basic
 
 
 open Classical
@@ -249,7 +249,7 @@ def applyAddHom (m : ι → M) : ContinuousAlternatingMap R M N ι →+ N where
 @[simp]
 theorem sum_apply {α : Type*} (f : α → ContinuousAlternatingMap R M N ι) (m : ι → M)
     {s : Finset α} : (Finset.sum s f) m = Finset.sum s (fun a => f a m) :=
-  (applyAddHom m).map_sum f s
+  map_sum (applyAddHom m) f s
 
 end ContinuousAdd
 

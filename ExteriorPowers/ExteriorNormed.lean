@@ -223,8 +223,7 @@ AlternatingMap.mkContinuousAlternating (alternatingFormOfFamily 𝕜 r (fun i =>
       | inl h => rw [h]; simp only [Units.val_one, Int.cast_one, norm_one]
       | inr h => rw [h]; simp only [Units.val_neg, Units.val_one, Int.cast_neg, Int.cast_one,
         norm_neg, norm_one]
-    rw [norm_prod, heq, one_mul, Finset.Equiv.prod_comp_finset σ (fun i => ‖m i‖)
-      (Eq.symm (Finset.image_univ_equiv σ.symm)), ←Finset.prod_mul_distrib]
+    rw [norm_prod, heq, one_mul, ← Equiv.prod_comp σ (fun i => ‖m i‖), ← Finset.prod_mul_distrib]
     exact Finset.prod_le_prod (fun i _ => norm_nonneg _)
       (fun i _ => ContinuousLinearMap.le_op_norm (f i) (m (σ i)))
 )

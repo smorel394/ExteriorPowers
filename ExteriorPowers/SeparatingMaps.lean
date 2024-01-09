@@ -111,7 +111,7 @@ lemma SeparatingMaps_zero : SeparatingMaps 𝕜 E 0 := by
   intro ⟨W, hWfd, hWrank⟩
   existsi 0
   letI := hWfd
-  rw [finrank_eq_zero] at hWrank
+  rw [Submodule.finrank_eq_zero] at hWrank
   simp only [ge_iff_le]
   rw [hWrank]
   simp only [ge_iff_le, bot_le, inf_of_le_left]

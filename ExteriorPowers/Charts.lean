@@ -467,7 +467,8 @@ InverseChart φ f ∈ Goodset ((ContinuousLinearMap.fst 𝕜 (Fin r → 𝕜) U)
         exact LinearMap.graph_fst_surjective f.toLinearMap
     . simp only [Submodule.map_coe]
       apply Equiv.bijOn' φ.toEquiv
-      . simp only [LinearEquiv.coe_toEquiv, ContinuousLinearEquiv.coe_toLinearEquiv, Set.maps_image_to]
+      . simp only [LinearEquiv.coe_toEquiv, ContinuousLinearEquiv.coe_toLinearEquiv,
+        Set.mapsTo_image_iff]
         intro u
         simp only [Function.comp_apply, LinearEquiv.apply_symm_apply]
         rw [←LinearEquiv.invFun_eq_symm]
@@ -484,12 +485,12 @@ InverseChart φ f ∈ Goodset ((ContinuousLinearMap.fst 𝕜 (Fin r → 𝕜) U)
         simp only [Prod.mk.eta]
         rfl
   . constructor
-    . simp only [Submodule.map_coe, Set.maps_univ_to, Set.mem_image, SetLike.mem_coe, LinearMap.mem_graph_iff,
-      ContinuousLinearMap.coe_coe, Prod.exists, exists_eq_left, Subtype.forall, Submodule.mem_map, forall_exists_index,
-      forall_apply_eq_imp_iff']
-      intro a x hxa
-      existsi x
-      exact hxa
+    . simp only [Submodule.map_coe, Set.mapsTo_univ_iff, Set.mem_image, SetLike.mem_coe,
+      LinearMap.mem_graph_iff, ContinuousLinearMap.coe_coe, Prod.exists, exists_eq_left,
+      Subtype.forall, Submodule.mem_map, forall_exists_index, forall_apply_eq_imp_iff]
+      intro a
+      existsi a
+      rfl
     . rw [and_iff_right Set.injOn_subtype_val]
       have heq : Submodule.map (LinearEquiv.symm φ.toLinearEquiv) (LinearMap.graph f.toLinearMap) =
         (fun (x : Submodule.map (LinearEquiv.symm φ.toLinearEquiv) (LinearMap.graph f.toLinearMap)) => x.1) ''
@@ -762,7 +763,8 @@ lemma ChoiceOfChart (ψ : E ≃L[𝕜] (Fin r → 𝕜) × U) (v : {v : Fin r �
 
 /- Definition of the chart as LocalEquiv.-/
 
-def Chart_LocalEquiv (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) : LocalEquiv (Grassmannian 𝕜 E r) ((Fin r → 𝕜) →L[𝕜] U) :=
+def Chart_PartialEquiv (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) :
+    PartialEquiv (Grassmannian 𝕜 E r) ((Fin r → 𝕜) →L[𝕜] U) :=
 {
   toFun := Chart φ
   invFun := InverseChart φ

@@ -300,12 +300,12 @@ end InverseChart
 /- Definition of the chart as a local homeomorph. -/
 
 
-def Chart_LocalHomeomorph (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) :
-LocalHomeomorph (Grassmannian 𝕜 E r) ((Fin r → 𝕜) →L[𝕜] U) := {Chart_LocalEquiv φ with
+def Chart_PartialHomeomorph (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) :
+PartialHomeomorph (Grassmannian 𝕜 E r) ((Fin r → 𝕜) →L[𝕜] U) := {Chart_PartialEquiv φ with
   open_source := GoodsetIsOpen _
   open_target := isOpen_univ
-  continuous_toFun := ChartContinuous φ
-  continuous_invFun := Continuous.continuousOn (InverseChartContinuous φ)
+  continuousOn_toFun := ChartContinuous φ
+  continuousOn_invFun := Continuous.continuousOn (InverseChartContinuous φ)
 }
 
 end Grassmannian

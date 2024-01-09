@@ -438,14 +438,14 @@ lemma linearDerive_eq_toFormalMultilinearSeries_degreeOne [LinearOrder ι]
   have hinj : ∀ (i j : ι) (hi : i ∈ Finset.univ) (hj : j ∈ Finset.univ), I i hi = I j hj → i = j :=
     fun _ _ _ _ => by simp only [Subtype.mk.injEq, Finset.singleton_inj, imp_self]
   have hsurj : ∀ s ∈ Finset.univ (α := {s : Finset ι // s.card = 1}), ∃ (i : ι) (hi : i ∈ Finset.univ),
-      s = I i hi := by
+      I i hi = s := by
     intro ⟨s, hs⟩ _
     rw [Finset.card_eq_one] at hs
     existsi Classical.choose hs
     existsi Finset.mem_univ _
     simp only [Subtype.mk.injEq]
-    exact Classical.choose_spec hs
-  rw [Finset.sum_bij I hI heq hinj hsurj (g := fun s => f (s.1.piecewise (y 0) x))]
+    exact Eq.symm (Classical.choose_spec hs)
+  rw [Finset.sum_bij I hI (fun i hi j hj ↦ hinj i j hi hj) hsurj heq (g := fun s => f (s.1.piecewise (y 0) x))]
 
 lemma sub_vs_linearDeriv (f : MultilinearMap R M N) (x h h' : (i : ι) → M i) :
     f (x + h) - f (x + h') - f.linearDeriv x (h - h') = Finset.sum
@@ -494,7 +494,7 @@ lemma sub_vs_linearDeriv (f : MultilinearMap R M N) (x h h' : (i : ι) → M i) 
     change i ∈ {Classical.choose hs}
     rw [← (Classical.choose_spec hs)]
     simp only [Finset.mem_singleton]
-  rw [Finset.sum_bij' I hI heq J hJ hJI hIJ (g := fun i => f (Function.update x i ((h - h') i))),
+  rw [Finset.sum_bij' I J hI hJ hJI hIJ heq (g := fun i => f (Function.update x i ((h - h') i))),
     sub_self]
 
 
