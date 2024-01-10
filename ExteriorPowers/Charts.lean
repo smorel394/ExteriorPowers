@@ -228,8 +228,9 @@ def ChartAux (φ : E →L[𝕜] Fin r → 𝕜) (W : Grassmannian 𝕜 E r) : (F
   . exact 0
 
 def Chart (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) (W : Grassmannian 𝕜 E r) : ((Fin r → 𝕜) →L[𝕜] U) :=
-((ContinuousLinearMap.snd 𝕜 (Fin r → 𝕜) U).comp φ.toContinuousLinearMap).comp ((Submodule.subtypeL W.1).comp
-      (ChartAux ((ContinuousLinearMap.fst 𝕜 (Fin r → 𝕜) U).comp φ.toContinuousLinearMap) W))
+  ((ContinuousLinearMap.snd 𝕜 (Fin r → 𝕜) U).comp φ.toContinuousLinearMap).comp
+  ((Submodule.subtypeL W.1).comp (ChartAux ((ContinuousLinearMap.fst 𝕜 (Fin r → 𝕜) U).comp
+  φ.toContinuousLinearMap) W))
 
 
 /- We lift the chart to a map on (Fin r → E).-/
@@ -435,18 +436,16 @@ lemma ChartLift_isLift' (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) :
 
 /- Definition of the inverse chart.-/
 
-def InverseChart (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) : ((Fin r → 𝕜) →L[𝕜] U) → Grassmannian 𝕜 E r := by
-  intro f
-  refine ⟨Submodule.map φ.symm (LinearMap.graph f), ?_⟩
-  unfold Grassmannian
-  simp only [Set.mem_setOf_eq]
-  constructor
-  . letI := LinearEquiv.finiteDimensional (LinearMap.graph_equiv_fst f.toLinearMap).symm
-    apply Module.Finite.map
-  . erw [LinearEquiv.finrank_map_eq φ.toLinearEquiv.symm]
-    rw [LinearEquiv.finrank_eq (LinearMap.graph_equiv_fst f.toLinearMap)]
-    simp only [FiniteDimensional.finrank_fintype_fun_eq_card, Fintype.card_fin]
-
+def InverseChart (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) : ((Fin r → 𝕜) →L[𝕜] U) → Grassmannian 𝕜 E r :=
+  fun f ↦ by refine ⟨Submodule.map φ.symm (LinearMap.graph f), ?_⟩
+             unfold Grassmannian
+             simp only [Set.mem_setOf_eq]
+             constructor
+             · letI := LinearEquiv.finiteDimensional (LinearMap.graph_equiv_fst f.toLinearMap).symm
+               apply Module.Finite.map
+             · erw [LinearEquiv.finrank_map_eq φ.toLinearEquiv.symm]
+               rw [LinearEquiv.finrank_eq (LinearMap.graph_equiv_fst f.toLinearMap)]
+               simp only [FiniteDimensional.finrank_fintype_fun_eq_card, Fintype.card_fin]
 
 lemma InverseChart_codomainGoodset (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) (f : (Fin r → 𝕜) →L[𝕜] U) :
 InverseChart φ f ∈ Goodset ((ContinuousLinearMap.fst 𝕜 (Fin r → 𝕜) U).comp φ.toContinuousLinearMap) := by --sorry
@@ -505,7 +504,8 @@ InverseChart φ f ∈ Goodset ((ContinuousLinearMap.fst 𝕜 (Fin r → 𝕜) U)
 
 
 def InverseChartLift (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) (f : (Fin r → 𝕜) →L[𝕜] U) : Fin r → E :=
-φ.symm ∘ (ContinuousLinearMap.prod (ContinuousLinearMap.id _ _) f) ∘ (fun i => (Pi.basisFun 𝕜 (Fin r)) i)
+  φ.symm ∘ (ContinuousLinearMap.prod (ContinuousLinearMap.id _ _) f) ∘
+  (fun i => (Pi.basisFun 𝕜 (Fin r)) i)
 
 
 lemma InverseChartLift_codomain (φ : E ≃L[𝕜] (Fin r → 𝕜) × U) (f : (Fin r → 𝕜) →L[𝕜] U) :
