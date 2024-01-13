@@ -708,9 +708,6 @@ lemma mem_exteriorPowerFiniteSubmodule (x : ExteriorPower R M n) :
 
 /-! Results that only work over a field.-/
 
---variable {K E F: Type*} [Field K] [AddCommGroup E] [Module K E] [AddCommGroup F] [Module K F]
---  (n : ℕ)
-
 /-- If `v` is a linearly independent family of vectors (indexed by a linearly ordered type),
 then the family of its `n`-fold exterior products is also linearly independent.-/
 lemma ιMulti_family_linearIndependent_field {I : Type*} [LinearOrder I] {v : I → E}
