@@ -1,7 +1,6 @@
 import ExteriorPowers.ExteriorAlgebra
 
 set_option maxHeartbeats 300000
-set_option synthInstance.maxHeartbeats 100000
 
 open BigOperators
 
@@ -617,27 +616,26 @@ lemma FinrankOfFiniteFree (hfree : Module.Free R M) [Module.Finite R M] :
 
 variable {R}
 
-lemma range_map_le_of_le {P Q : Submodule R M} (hPQ : P ≤ Q) :
-    LinearMap.range (map n (Submodule.subtype P)) ≤
-    LinearMap.range (map n (Submodule.subtype Q)) := by
+lemma range_map_comp_le (f : N' →ₗ[R] N) (g : N →ₗ[R] M) :
+    LinearMap.range (map n (g.comp f)) ≤
+    LinearMap.range (map n g) := by
   intro x hx
   rw [LinearMap.mem_range] at hx ⊢
   obtain ⟨y, hyx⟩ := hx
   rw [← hyx]
-  have hy : y ∈ (⊤ : Submodule R (ExteriorPower R P n)) := by simp only [Submodule.mem_top]
+  have hy : y ∈ (⊤ : Submodule R (ExteriorPower R N' n)) := by simp only [Submodule.mem_top]
   rw [← ExteriorPower.ιMulti_span] at hy
-  apply Submodule.span_induction hy (p := fun y => ∃ z, (map n (Submodule.subtype Q)) z =
-    (map n (Submodule.subtype P)) y)
+  apply Submodule.span_induction hy (p := fun y => ∃ z, (map n g) z =
+    (map n (g.comp f)) y)
   · intro x hx
-    rw [Set.mem_range] at hx
-    obtain ⟨m, hmx⟩ := hx
-    existsi ExteriorPower.ιMulti R n (M := Q) (fun i => ⟨(m i).1, hPQ (m i).2⟩)
-    rw [ExteriorPower.map_apply_ιMulti, ←hmx, ExteriorPower.map_apply_ιMulti]
+    obtain ⟨m, hmx⟩ := Set.mem_range.mp hx
+    existsi ExteriorPower.ιMulti R n (M := N) (fun i => f (m i))
+    rw [ExteriorPower.map_apply_ιMulti, ← hmx, ExteriorPower.map_apply_ιMulti]
     apply congrArg
     ext i
-    simp only [Submodule.coeSubtype, Function.comp_apply]
+    simp only [Function.comp_apply, LinearMap.coe_comp]
   · existsi 0
-    rw [LinearMap.map_zero, LinearMap.map_zero]
+    simp only [map_zero]
   · intro x y ⟨z, hz⟩ ⟨z', hz'⟩
     existsi z + z'
     rw [LinearMap.map_add, LinearMap.map_add, hz, hz']
@@ -645,14 +643,29 @@ lemma range_map_le_of_le {P Q : Submodule R M} (hPQ : P ≤ Q) :
     existsi a • z
     rw [LinearMap.map_smul, LinearMap.map_smul, hz]
 
+lemma map_subtype (P Q : Submodule R M) (hPQ : P ≤ Q) :
+    ∃ (f : P →ₗ[R] Q), Submodule.subtype P = (Submodule.subtype Q).comp f := by
+  existsi
+   { toFun := fun x ↦ ⟨x.1, hPQ x.2⟩
+     map_add' := fun x y ↦ by simp only [AddSubmonoid.coe_add, Submodule.coe_toAddSubmonoid,
+       AddSubmonoid.mk_add_mk]
+     map_smul' := fun a x ↦ by simp only [SetLike.val_smul, RingHom.id_apply, SetLike.mk_smul_mk]
+     }
+  ext x
+  simp only [Submodule.coeSubtype, LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk,
+    Function.comp_apply]
 
 lemma mem_ExteriorPowerSup {P Q : Submodule R M} (x : ExteriorPower R P n) (y : ExteriorPower R Q n) :
     ExteriorPower.map n (Submodule.subtype P) x + ExteriorPower.map n (Submodule.subtype Q) y ∈
     LinearMap.range (ExteriorPower.map n (Submodule.subtype (P ⊔ Q))) := by
   apply Submodule.add_mem
-  · apply range_map_le_of_le n le_sup_left
+  · let ⟨f, hf⟩ := map_subtype P (P ⊔ Q) le_sup_left
+    rw [hf]
+    apply range_map_comp_le n f (Submodule.subtype (P ⊔ Q))
     simp only [LinearMap.mem_range, exists_apply_eq_apply]
-  · apply range_map_le_of_le n le_sup_right
+  · let ⟨f, hf⟩ := map_subtype Q (P ⊔ Q) le_sup_right
+    rw [hf]
+    apply range_map_comp_le n f (Submodule.subtype (P ⊔ Q))
     simp only [LinearMap.mem_range, exists_apply_eq_apply]
 
 /-- Every element of ExteriorPower R M n is in the image of ExteriorPower R P n, for some finitely
