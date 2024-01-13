@@ -1,13 +1,11 @@
 import Mathlib.Tactic
 import Mathlib.Analysis.NormedSpace.Multilinear.Basic
+import Mathlib.Topology.Algebra.Module.Alternating.Basic
 
+--open Classical
 
-open Classical
-
-
-
-universe u v w w₂
-
+--universe u v w w₂
+/-
 variable (R : Type u) (M : Type w) [Semiring R] [AddCommMonoid M]
 [Module R M] [TopologicalSpace M] (N : Type w₂) [AddCommMonoid N] [Module R N] [TopologicalSpace N]
 (ι : Type v)
@@ -378,21 +376,25 @@ theorem _root_.ContinuousLinearMap.compContinuousAlternatingMap_coe (g : N →L[
   rfl
 
 end Basic
+-/
+
+namespace ContinuousAlternatingMap
 
 section Norm
 
-variable {𝕜 ι E F : Type*} [Fintype ι] [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-[NormedAddCommGroup F] [NormedSpace 𝕜 F]
+variable {𝕜 ι E F : Type*} [Fintype ι] [NontriviallyNormedField 𝕜] [NormedAddCommGroup E]
+[NormedSpace 𝕜 E] [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-noncomputable instance instNormedAddCommGroupContinuousAlternatingMap : NormedAddCommGroup
-(ContinuousAlternatingMap 𝕜 E F ι) :=
-NormedAddCommGroup.induced (ContinuousAlternatingMap 𝕜 E F ι) (ContinuousMultilinearMap 𝕜 (fun (_ : ι) => E) F)
-toContinuousMultilinearMapAddMonoidHom toContinuousMultilinearMap_injective
+noncomputable instance instNormedAddCommGroupContinuousAlternatingMap :
+    NormedAddCommGroup (ContinuousAlternatingMap 𝕜 E F ι) :=
+  NormedAddCommGroup.induced (ContinuousAlternatingMap 𝕜 E F ι)
+  (ContinuousMultilinearMap 𝕜 (fun (_ : ι) => E) F)
+  toMultilinearAddHom toContinuousMultilinearMap_injective
 
-
-noncomputable instance instNormedSpaceContinuousAlternatingMap : NormedSpace 𝕜 (ContinuousAlternatingMap 𝕜 E F ι) :=
-NormedSpace.induced 𝕜 (ContinuousAlternatingMap 𝕜 E F ι) (ContinuousMultilinearMap 𝕜 (fun (_ : ι) => E) F)
-toContinuousMultilinearMapLinear
+noncomputable instance instNormedSpaceContinuousAlternatingMap :
+    NormedSpace 𝕜 (ContinuousAlternatingMap 𝕜 E F ι) :=
+  NormedSpace.induced 𝕜 (ContinuousAlternatingMap 𝕜 E F ι) (ContinuousMultilinearMap 𝕜
+  (fun (_ : ι) => E) F) toContinuousMultilinearMapLinear
 
 end Norm
 
@@ -400,12 +402,14 @@ end ContinuousAlternatingMap
 
 open BigOperators Finset
 
-theorem MultilinearMap.norm_image_sub_le_of_bound'_sn {𝕜 : Type u} {ι : Type v} {E : ι → Type wE} {G : Type wG}
-[Fintype ι] [NontriviallyNormedField 𝕜] [(i : ι) → SeminormedAddCommGroup (E i)] [(i : ι) → NormedSpace 𝕜 (E i)]
-[SeminormedAddCommGroup G] [NormedSpace 𝕜 G] (f : MultilinearMap 𝕜 E G) [DecidableEq ι] {C : ℝ} (hC : 0 ≤ C)
-(H : ∀ (m : (i : ι) → E i), ‖f m‖ ≤ C * Finset.prod Finset.univ fun (i : ι) => ‖m i‖) (m₁ : (i : ι) → E i) (m₂ : (i : ι) → E i) :
-‖f m₁ - f m₂‖ ≤   C *     Finset.sum Finset.univ fun (i : ι) =>
-      Finset.prod Finset.univ fun (j : ι) => if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖ := by
+theorem MultilinearMap.norm_image_sub_le_of_bound'_sn {𝕜 : Type u} {ι : Type v} {E : ι → Type wE}
+    {G : Type wG} [Fintype ι] [NontriviallyNormedField 𝕜] [(i : ι) → SeminormedAddCommGroup (E i)]
+    [(i : ι) → NormedSpace 𝕜 (E i)] [SeminormedAddCommGroup G] [NormedSpace 𝕜 G]
+    (f : MultilinearMap 𝕜 E G) [DecidableEq ι] {C : ℝ} (hC : 0 ≤ C)
+    (H : ∀ (m : (i : ι) → E i), ‖f m‖ ≤ C * Finset.prod Finset.univ fun (i : ι) => ‖m i‖)
+    (m₁ : (i : ι) → E i) (m₂ : (i : ι) → E i) :
+    ‖f m₁ - f m₂‖ ≤ C * Finset.sum Finset.univ fun (i : ι) =>
+    Finset.prod Finset.univ fun (j : ι) => if j = i then ‖m₁ i - m₂ i‖ else max ‖m₁ j‖ ‖m₂ j‖ := by
   have A :
     ∀ s : Finset ι,
       ‖f m₁ - f (s.piecewise m₂ m₁)‖ ≤
@@ -448,11 +452,12 @@ theorem MultilinearMap.norm_image_sub_le_of_bound'_sn {𝕜 : Type u} {ι : Type
   simp
 
 
-theorem MultilinearMap.norm_image_sub_le_of_bound_sn {𝕜 : Type u} {ι : Type v} {E : ι → Type wE} {G : Type wG} [Fintype ι]
-[NontriviallyNormedField 𝕜] [(i : ι) → SeminormedAddCommGroup (E i)] [(i : ι) → NormedSpace 𝕜 (E i)] [SeminormedAddCommGroup G]
-[NormedSpace 𝕜 G] (f : MultilinearMap 𝕜 E G) {C : ℝ} (hC : 0 ≤ C) (H : ∀ (m : (i : ι) → E i),
-‖f m‖ ≤ C * Finset.prod Finset.univ fun (i : ι) => ‖m i‖) (m₁ : (i : ι) → E i) (m₂ : (i : ι) → E i) :
-‖f m₁ - f m₂‖ ≤ C * ↑(Fintype.card ι) * max ‖m₁‖ ‖m₂‖ ^ (Fintype.card ι - 1) * ‖m₁ - m₂‖ := by
+theorem MultilinearMap.norm_image_sub_le_of_bound_sn {𝕜 : Type u} {ι : Type v} {E : ι → Type wE}
+    {G : Type wG} [Fintype ι] [NontriviallyNormedField 𝕜] [(i : ι) → SeminormedAddCommGroup (E i)]
+    [(i : ι) → NormedSpace 𝕜 (E i)] [SeminormedAddCommGroup G] [NormedSpace 𝕜 G]
+    (f : MultilinearMap 𝕜 E G) {C : ℝ} (hC : 0 ≤ C) (H : ∀ (m : (i : ι) → E i), ‖f m‖ ≤
+    C * Finset.prod Finset.univ fun (i : ι) => ‖m i‖) (m₁ : (i : ι) → E i) (m₂ : (i : ι) → E i) :
+    ‖f m₁ - f m₂‖ ≤ C * ↑(Fintype.card ι) * max ‖m₁‖ ‖m₂‖ ^ (Fintype.card ι - 1) * ‖m₁ - m₂‖ := by
   classical
   have A :
     ∀ i : ι,
@@ -482,13 +487,12 @@ theorem MultilinearMap.norm_image_sub_le_of_bound_sn {𝕜 : Type u} {ι : Type 
       rw [sum_const, card_univ, nsmul_eq_mul]
       ring
 
-
-
-theorem MultilinearMap.continuous_of_bound_sn {𝕜 : Type u} {ι : Type v} {E : ι → Type wE} {G : Type wG} [Fintype ι]
-[NontriviallyNormedField 𝕜] [(i : ι) → SeminormedAddCommGroup (E i)] [(i : ι) → NormedSpace 𝕜 (E i)] [SeminormedAddCommGroup G]
-[NormedSpace 𝕜 G] (f : MultilinearMap 𝕜 E G) (C : ℝ) (H : ∀ (m : (i : ι) → E i), ‖f m‖ ≤ C * Finset.prod Finset.univ
-fun (i : ι) => ‖m i‖) :
-Continuous f.toFun := by
+theorem MultilinearMap.continuous_of_bound_sn {𝕜 : Type u} {ι : Type v} {E : ι → Type wE}
+    {G : Type wG} [Fintype ι] [NontriviallyNormedField 𝕜] [(i : ι) → SeminormedAddCommGroup (E i)]
+    [(i : ι) → NormedSpace 𝕜 (E i)] [SeminormedAddCommGroup G] [NormedSpace 𝕜 G]
+    (f : MultilinearMap 𝕜 E G) (C : ℝ) (H : ∀ (m : (i : ι) → E i), ‖f m‖ ≤
+    C * Finset.prod Finset.univ fun (i : ι) => ‖m i‖) :
+    Continuous f.toFun := by
   let D := max C 1
   have D_pos : 0 ≤ D := le_trans zero_le_one (le_max_right _ _)
   replace H : ∀ (m : (i : ι) → E i), ‖f m‖ ≤ D * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)
@@ -510,27 +514,28 @@ Continuous f.toFun := by
 
 namespace AlternatingMap
 
-variable {𝕜 ι E F : Type*} [Fintype ι] [NontriviallyNormedField 𝕜] [SeminormedAddCommGroup E] [NormedSpace 𝕜 E]
-[SeminormedAddCommGroup F] [NormedSpace 𝕜 F]
+variable {𝕜 ι E F : Type*} [Fintype ι] [NontriviallyNormedField 𝕜] [SeminormedAddCommGroup E]
+[NormedSpace 𝕜 E] [SeminormedAddCommGroup F] [NormedSpace 𝕜 F]
 
 /-- Constructing a continuous alternating map from an alternating map satisfying a boundedness
 condition. -/
 def mkContinuousAlternating (f : AlternatingMap 𝕜 E F ι) (C : ℝ)
-(H : ∀ (m : ι → E), ‖f m‖ ≤ C * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)) : ContinuousAlternatingMap 𝕜 E F ι :=
+(H : ∀ (m : ι → E), ‖f m‖ ≤ C * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)) :
+     ContinuousAlternatingMap 𝕜 E F ι :=
   { f with cont := f.continuous_of_bound_sn C H }
-
 
 @[simp]
 theorem coe_mkContinuousAlternating (f : AlternatingMap 𝕜 E F ι) (C : ℝ)
-(H : ∀ (m : ι → E), ‖f m‖ ≤ C * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)) :
-(AlternatingMap.mkContinuousAlternating f C H).toAlternatingMap = f :=
+    (H : ∀ (m : ι → E), ‖f m‖ ≤ C * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)) :
+    (AlternatingMap.mkContinuousAlternating f C H).toAlternatingMap = f :=
   rfl
 
 @[simp]
 lemma mkContinuousAlternating_apply (f : AlternatingMap 𝕜 E F ι) (C : ℝ)
-(H : ∀ (m : ι → E), ‖f m‖ ≤ C * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)) (v : ι → E) :
-mkContinuousAlternating f C H v = f v := by
+    (H : ∀ (m : ι → E), ‖f m‖ ≤ C * Finset.prod Finset.univ (fun (i : ι) => ‖m i‖)) (v : ι → E) :
+    mkContinuousAlternating f C H v = f v := by
   unfold mkContinuousAlternating
-  simp only [ContinuousAlternatingMap.coe_mk, coe_mk, coe_multilinearMap]
+  simp only [ContinuousAlternatingMap.coe_mk]
+  rfl
 
 end AlternatingMap
