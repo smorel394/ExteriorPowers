@@ -1,9 +1,6 @@
 import ExteriorPowers.ExteriorAlgebra
 
-
 -- TODO: Freeness, finite-dimensionality and dimension for the whole exterior algebra.
-
-set_option maxHeartbeats 300000
 
 open BigOperators
 
@@ -26,7 +23,7 @@ def Finite [Module.Finite R M]: Module.Finite R (ExteriorPower R M n) :=
   Module.Finite.mk ((Submodule.fg_top _).mpr (Submodule.FG.pow (by
   rw [LinearMap.range_eq_map]; exact Submodule.FG.map _  (Module.finite_def.mp inferInstance)) _ ))
 
-/-! We prove the universal property of the `n`th exterior power of `M`: linear maps from
+/-! the universal property of the `n`th exterior power of `M`: linear maps from
 `ExteriorPower R M n` to a module `N` are in linear equivalence with `n`-fold alternating maps from
 `M` to `N`-/
 
@@ -555,7 +552,7 @@ lemma linearFormOfBasis_apply_nondiag {I : Type*} [LinearOrder I] (b : Basis I R
   simp only [Finset.coe_orderIsoOfFin_apply, Ne.symm hi, ite_false]
 
 /-- If `b` is a basis of `M` (indexed by a linearly ordered type), then the family
-`ExteriorPower.ιMulti R n b` of the `n`th fold exterior products of its elements is linearly
+`ExteriorPower.ιMulti R n b` of the `n`-fold exterior products of its elements is linearly
 independent in the `n`th exterior power of `M`.-/
 lemma ιMulti_family_linearIndependent_ofBasis {I : Type*} [LinearOrder I] (b : Basis I R M) :
     LinearIndependent R (ιMulti_family R n b) :=
@@ -566,7 +563,7 @@ lemma ιMulti_family_linearIndependent_ofBasis {I : Type*} [LinearOrder I] (b : 
   (fun ⟨_, _⟩ ↦ by simp only [Function.comp_apply]; apply linearFormOfBasis_apply_diag)
 
 /-- If `b` is a basis of `M` (indexed by a linearly ordered type), the basis of the `n`th
-exterior power of `M` formed by the `n`th fold exterior products of elements of `b`..-/
+exterior power of `M` formed by the `n`-fold exterior products of elements of `b`..-/
 noncomputable def BasisOfBasis {I : Type*} [LinearOrder I] (b : Basis I R M) :
     Basis {s : Finset I // Finset.card s = n} R (ExteriorPower R M n) :=
   Basis.mk (v := ιMulti_family R n b) (ιMulti_family_linearIndependent_ofBasis _ _ _)
