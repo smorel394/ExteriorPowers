@@ -1,16 +1,23 @@
 import ExteriorPowers.ExteriorAlgebra
 
+
+-- TODO: Freeness, finite-dimensionality and dimension for the whole exterior algebra.
+
 set_option maxHeartbeats 300000
 
 open BigOperators
 
-variable (R M N N' : Type*) [CommRing R] [AddCommGroup M] [Module R M] [AddCommGroup N] [Module R N]
-  [AddCommGroup N'] [Module R N'] (n : ℕ)
+variable {R M N N' N'' : Type*} [CommRing R] [AddCommGroup M] [Module R M] [AddCommGroup N]
+  [Module R N] [AddCommGroup N'] [Module R N'] [AddCommGroup N''] [Module R N''] {n : ℕ}
 
 variable {K E F: Type*} [Field K] [AddCommGroup E] [Module K E] [AddCommGroup F] [Module K F]
 
+variable (R M n)
+
 /--Definition of the `n`th exterior power-/
 abbrev ExteriorPower := (LinearMap.range (ExteriorAlgebra.ι R : M →ₗ[R] ExteriorAlgebra R M) ^ n)
+
+variable {R M n}
 
 namespace ExteriorPower
 
@@ -19,11 +26,11 @@ def Finite [Module.Finite R M]: Module.Finite R (ExteriorPower R M n) :=
   Module.Finite.mk ((Submodule.fg_top _).mpr (Submodule.FG.pow (by
   rw [LinearMap.range_eq_map]; exact Submodule.FG.map _  (Module.finite_def.mp inferInstance)) _ ))
 
-variable {R M N N'}
-
 /-! We prove the universal property of the `n`th exterior power of `M`: linear maps from
 `ExteriorPower R M n` to a module `N` are in linear equivalence with `n`-fold alternating maps from
 `M` to `N`-/
+
+variable (n)
 
 def liftAlternating_aux : (AlternatingMap R M N (Fin n)) →ₗ[R]
 ((i : ℕ) → AlternatingMap R M N (Fin i)) :=
@@ -612,99 +619,46 @@ lemma FinrankOfFiniteFree (hfree : Module.Free R M) [Module.Finite R M] :
   by rw [FiniteDimensional.finrank_eq_card_basis hfree.chooseBasis,
     FiniteDimensional.finrank_eq_card_basis B, Fintype.card_finset_len]
 
--- TODO: Freeness, finite-dimensionality and dimension for the whole exterior algebra.
-
 variable {R}
 
-lemma range_map_comp_le (f : N' →ₗ[R] N) (g : N →ₗ[R] M) :
-    LinearMap.range (map n (g.comp f)) ≤
-    LinearMap.range (map n g) := by
-  intro x hx
-  rw [LinearMap.mem_range] at hx ⊢
-  obtain ⟨y, hyx⟩ := hx
-  rw [← hyx]
-  have hy : y ∈ (⊤ : Submodule R (ExteriorPower R N' n)) := by simp only [Submodule.mem_top]
-  rw [← ExteriorPower.ιMulti_span] at hy
-  apply Submodule.span_induction hy (p := fun y => ∃ z, (map n g) z =
-    (map n (g.comp f)) y)
-  · intro x hx
-    obtain ⟨m, hmx⟩ := Set.mem_range.mp hx
-    existsi ExteriorPower.ιMulti R n (M := N) (fun i => f (m i))
-    rw [ExteriorPower.map_apply_ιMulti, ← hmx, ExteriorPower.map_apply_ιMulti]
-    apply congrArg
-    ext i
-    simp only [Function.comp_apply, LinearMap.coe_comp]
-  · existsi 0
-    simp only [map_zero]
-  · intro x y ⟨z, hz⟩ ⟨z', hz'⟩
-    existsi z + z'
-    rw [LinearMap.map_add, LinearMap.map_add, hz, hz']
-  · intro a y ⟨z, hz⟩
-    existsi a • z
-    rw [LinearMap.map_smul, LinearMap.map_smul, hz]
+lemma _root_.Submodule.map_subtype (P Q : Submodule R M) (hPQ : P ≤ Q) :
+    ∃ (f : P →ₗ[R] Q), Submodule.subtype P = (Submodule.subtype Q).comp f :=
+  ⟨P.subtype.codRestrict Q (fun x ↦ by rw [Submodule.coeSubtype]; exact hPQ x.2),
+  LinearMap.ext (fun _ ↦ by simp only [Submodule.coeSubtype, LinearMap.subtype_comp_codRestrict])⟩
 
-lemma map_subtype (P Q : Submodule R M) (hPQ : P ≤ Q) :
-    ∃ (f : P →ₗ[R] Q), Submodule.subtype P = (Submodule.subtype Q).comp f := by
-  existsi
-   { toFun := fun x ↦ ⟨x.1, hPQ x.2⟩
-     map_add' := fun x y ↦ by simp only [AddSubmonoid.coe_add, Submodule.coe_toAddSubmonoid,
-       AddSubmonoid.mk_add_mk]
-     map_smul' := fun a x ↦ by simp only [SetLike.val_smul, RingHom.id_apply, SetLike.mk_smul_mk]
-     }
-  ext x
-  simp only [Submodule.coeSubtype, LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk,
-    Function.comp_apply]
-
-lemma mem_ExteriorPowerSup {P Q : Submodule R M} (x : ExteriorPower R P n) (y : ExteriorPower R Q n) :
-    ExteriorPower.map n (Submodule.subtype P) x + ExteriorPower.map n (Submodule.subtype Q) y ∈
-    LinearMap.range (ExteriorPower.map n (Submodule.subtype (P ⊔ Q))) := by
-  apply Submodule.add_mem
-  · let ⟨f, hf⟩ := map_subtype P (P ⊔ Q) le_sup_left
-    rw [hf]
-    apply range_map_comp_le n f (Submodule.subtype (P ⊔ Q))
-    simp only [LinearMap.mem_range, exists_apply_eq_apply]
-  · let ⟨f, hf⟩ := map_subtype Q (P ⊔ Q) le_sup_right
-    rw [hf]
-    apply range_map_comp_le n f (Submodule.subtype (P ⊔ Q))
-    simp only [LinearMap.mem_range, exists_apply_eq_apply]
+lemma sum_range_map (f : N →ₗ[R] M) (f' : N' →ₗ[R] M) (f'' : N''→ₗ[R] M)
+  (hf : ∃ (g : N →ₗ[R] N''), f = f''.comp g) (hf' : ∃ (g' : N' →ₗ[R] N''), f' = f''.comp g') :
+    LinearMap.range (map n f) ⊔ LinearMap.range (map n f') ≤ LinearMap.range (map n f'') := by
+  let ⟨g, hg⟩ := hf
+  let ⟨g', hg'⟩ := hf'
+  intro x
+  simp only [Submodule.mem_sup, LinearMap.mem_range]
+  intro ⟨x₁, ⟨⟨y, hy⟩, ⟨x₂, ⟨⟨y', hy'⟩, hx⟩⟩⟩⟩
+  existsi map n g y + map n g' y'
+  rw [← hx, ← hy, ← hy', hg, hg', ← map_comp_map, ← map_comp_map, map_add, LinearMap.comp_apply,
+    LinearMap.comp_apply]
 
 /-- Every element of ExteriorPower R M n is in the image of ExteriorPower R P n, for some finitely
 generated submodule P of M.-/
-lemma mem_exteriorPowerFiniteSubmodule (x : ExteriorPower R M n) :
-    ∃ (P : Submodule R M), Submodule.FG P ∧ x ∈ LinearMap.range (ExteriorPower.map n
-    (Submodule.subtype P)) := by
+lemma mem_exteriorPower_from_mem_finite (x : ExteriorPower R M n) :
+    ∃ (P : Submodule R M), Submodule.FG P ∧ x ∈ LinearMap.range (map n (Submodule.subtype P)) := by
   have hx : x ∈ (⊤ : Submodule R (ExteriorPower R M n)) := by simp only [Submodule.mem_top]
-  rw [←ExteriorPower.ιMulti_span] at hx
-  apply Submodule.span_induction hx (p := fun x => ∃ (P : Submodule R M), Submodule.FG P ∧ x ∈ LinearMap.range
-    (ExteriorPower.map n (Submodule.subtype P)))
-  · intro x hx
-    rw [Set.mem_range] at hx
-    obtain ⟨m, hmx⟩ := hx
-    existsi Submodule.span R (Set.range m)
-    rw [and_iff_right (Submodule.fg_span (Set.finite_range m)), LinearMap.mem_range]
-    have hm : ∀ (i : Fin n), m i ∈ Submodule.span R (Set.range m) := by
-      intro i
-      apply Submodule.subset_span
-      simp only [Set.mem_range, exists_apply_eq_apply]
-    existsi ιMulti R n (fun i => ⟨m i, hm i⟩)
-    simp only [Subtype.mk.injEq, map_apply_ιMulti, Submodule.coeSubtype, Function.comp_apply]
-    rw [←hmx]
-    apply congrArg
-    ext i
-    simp only [Function.comp_apply]
-  · existsi (⊥ : Submodule R M)
-    exact ⟨Submodule.fg_bot, Submodule.zero_mem _⟩
-  · intro x y ⟨Px, hx⟩ ⟨Py, hy⟩
-    existsi Px ⊔ Py
-    rw [and_iff_right (Submodule.FG.sup hx.1 hy.1)]
-    rw [LinearMap.mem_range] at hx hy
-    obtain ⟨x', hxx'⟩ := hx.2
-    obtain ⟨y', hyy'⟩ := hy.2
-    rw [←hxx', ←hyy']
-    exact mem_ExteriorPowerSup n x' y'
-  · intro a x ⟨P, h⟩
-    existsi P
-    exact ⟨h.1, Submodule.smul_mem _ a h.2⟩
+  rw [← ιMulti_span] at hx
+  refine Submodule.span_induction hx (p := fun x => ∃ (P : Submodule R M),
+    P.FG ∧ x ∈ LinearMap.range (map n P.subtype)) ?_ ⟨(⊥ : Submodule R M), ⟨Submodule.fg_bot,
+    Submodule.zero_mem _⟩⟩ (fun _ _ ⟨Px, hx⟩ ⟨Py, hy⟩ ↦ ⟨Px ⊔ Py, ⟨Submodule.FG.sup hx.1 hy.1,
+      sum_range_map n Px.subtype Py.subtype _ (Submodule.map_subtype Px _ le_sup_left)
+      (Submodule.map_subtype Py _ le_sup_right) (Submodule.add_mem_sup hx.2 hy.2)⟩⟩)
+      (fun a x ⟨P, h⟩ ↦ ⟨P, ⟨h.1, Submodule.smul_mem _ a h.2⟩⟩)
+  intro x hx
+  obtain ⟨m, hmx⟩ := Set.mem_range.mp hx
+  existsi Submodule.span R (Set.range m)
+  rw [and_iff_right (Submodule.fg_span (Set.finite_range m)), LinearMap.mem_range]
+  existsi ιMulti R n (fun i => ⟨m i, Submodule.subset_span (by simp only [Set.mem_range,
+    exists_apply_eq_apply])⟩)
+  simp only [Subtype.mk.injEq, map_apply_ιMulti, Submodule.coeSubtype,
+    Function.comp_apply, ← hmx]
+  congr
 
 /-! Results that only work over a field.-/
 
@@ -715,35 +669,27 @@ lemma ιMulti_family_linearIndependent_field {I : Type*} [LinearOrder I] {v : I 
   set W := Submodule.span K (Set.range v)
   set v' : I → W := fun i => ⟨v i, by apply Submodule.subset_span; simp only [Set.mem_range,
     exists_apply_eq_apply]⟩
-  set f := Submodule.subtype W
-  have hvv' : v = f ∘ v' := by
-    ext i
-    simp only [Submodule.coeSubtype, Function.comp_apply]
-  have hv' : LinearIndependent K (ιMulti_family K n v') := by
-    have hv'li : LinearIndependent K v' := by
-      apply LinearIndependent.of_comp f; rw [←hvv']; exact hv
-    have hv'span : ⊤ ≤ Submodule.span K (Set.range v') := by
-      simp only [top_le_iff]
-      ext x
-      simp only [Submodule.mem_top, iff_true]
-      rw [←(Submodule.apply_mem_span_image_iff_mem_span (Submodule.injective_subtype W)), ←Set.range_comp, ←hvv']
-      simp only [Submodule.coeSubtype, SetLike.coe_mem]
-    set B := BasisOfBasis K n (Basis.mk hv'li hv'span)
-    have heq : ιMulti_family K n v' = B := by
-      simp only [BasisOfBasis_coe, Basis.coe_mk]
-    rw [heq]
-    exact Basis.linearIndependent B
-  rw [hvv', ←map_ιMulti_family]
-  apply LinearIndependent.map' hv'
-  rw [LinearMap.ker_eq_bot]
-  apply map_injective_field
-  simp only [Submodule.ker_subtype]
+  have h : v = (W.subtype) ∘ v' :=
+    funext (fun _ ↦ by simp only [Submodule.coeSubtype, Function.comp_apply])
+  rw [h, ← map_ιMulti_family]
+  refine LinearIndependent.map' ?_ (map n W.subtype)
+    (LinearMap.ker_eq_bot.mpr (map_injective_field n (Submodule.ker_subtype _)))
+  have hv'span : ⊤ ≤ Submodule.span K (Set.range v') := by
+    simp only [top_le_iff]
+    ext x
+    simp only [Submodule.mem_top, iff_true, ← Submodule.apply_mem_span_image_iff_mem_span
+      (Submodule.injective_subtype W), ← Set.range_comp, ← h]
+    simp only [Submodule.coeSubtype, SetLike.coe_mem]
+  have heq : ιMulti_family K n v' = BasisOfBasis K n (Basis.mk (LinearIndependent.of_comp
+    (W.subtype) (by rw [← h]; exact hv)) hv'span) := by simp only [BasisOfBasis_coe, Basis.coe_mk]
+  rw [heq]
+  apply Basis.linearIndependent
 
 lemma nonemptyOfNonempty {I : Type*} [LinearOrder I]
     (hne : Nonempty {v : I → E // LinearIndependent K v}) :
     Nonempty {v : {s : Finset I // Finset.card s = n} →
-    ExteriorPower K E n // LinearIndependent K v} := by
-  set v := Classical.choice hne
-  exact Nonempty.intro ⟨ιMulti_family K n v, ιMulti_family_linearIndependent_field n v.2⟩
+    ExteriorPower K E n // LinearIndependent K v} :=
+  let v := Classical.choice hne
+  Nonempty.intro ⟨ιMulti_family K n v, ιMulti_family_linearIndependent_field n v.2⟩
 
 end ExteriorPower
