@@ -36,7 +36,7 @@ def Goodset (φ : E →ₗ[𝕜] (Fin r → 𝕜)) : Set (Grassmannian 𝕜 E r)
 
 lemma GoodsetPreimage_iff_equiv (φ : E →ₗ[𝕜] (Fin r → 𝕜)) (v : Fin r → E)  :
 LinearIndependent 𝕜 (φ ∘ v) ↔ Function.Bijective (LinearMap.domRestrict φ
-(Submodule.span 𝕜 (Set.range v))) := by --sorry
+(Submodule.span 𝕜 (Set.range v))) := by
   constructor
   . intro hv
     have hker : LinearMap.ker (LinearMap.domRestrict φ (Submodule.span 𝕜 (Set.range v))) = ⊥ := by

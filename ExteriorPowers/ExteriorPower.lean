@@ -23,7 +23,7 @@ def Finite [Module.Finite R M]: Module.Finite R (ExteriorPower R M n) :=
   Module.Finite.mk ((Submodule.fg_top _).mpr (Submodule.FG.pow (by
   rw [LinearMap.range_eq_map]; exact Submodule.FG.map _  (Module.finite_def.mp inferInstance)) _ ))
 
-/-! the universal property of the `n`th exterior power of `M`: linear maps from
+/-! The universal property of the `n`th exterior power of `M`: linear maps from
 `ExteriorPower R M n` to a module `N` are in linear equivalence with `n`-fold alternating maps from
 `M` to `N`-/
 
@@ -282,8 +282,7 @@ lemma span_top_of_span_top {I : Type*} [LinearOrder I] {v : I → M}
     set α : Fin n → I := fun i => Classical.choose (hg i)
     set αprop := fun i => Classical.choose_spec (hg i)
     by_cases hinj : Function.Injective α
-    · --set s := Finset.image α Finset.univ
-      set h : Fin n → image α univ := fun i => ⟨α i, by simp only [mem_image, mem_univ, true_and,
+    · set h : Fin n → image α univ := fun i => ⟨α i, by simp only [mem_image, mem_univ, true_and,
         exists_apply_eq_apply]⟩
       have hbij : Function.Bijective h := by
         constructor
@@ -356,7 +355,7 @@ Submodule.span R  (Set.range (ιMulti_family R n v)) = ⊤ := by
 /-- If `v` is a family of vectors of `M` indexed by a linearly ordered type, then the span of the
 range of `ExteriorPower.ιMult_family R n v`, i.e. of the family of `n`-fold exterior products
 of elements of `v`, is the image of the map of exterior powers induced by the inclusion of
-the span of `v` into `M`..-/
+the span of `v` into `M`.-/
 lemma span_of_span {I : Type*} [LinearOrder I] (v : I → M) :
 LinearMap.range (map n (Submodule.subtype (Submodule.span R (Set.range v)))) =
   Submodule.span R (Set.range (ιMulti_family R n v)) := by
@@ -394,12 +393,12 @@ lemma toTensorPower_apply_ιMulti (v : Fin n → M) : toTensorPower R M n (ιMul
 
 /-- A family `f` indexed by `Fin n` of linear forms on `M` defines a linear form on the `n`th tensor
 power of `M`, by multiplying the components of `f`.-/
-noncomputable def _root_.TensorPower.linearFormOfFamily (f : (i : Fin n) → (M →ₗ[R] R)) :
+noncomputable def _root_.TensorPower.linearFormOfFamily (f : (_ : Fin n) → (M →ₗ[R] R)) :
     TensorPower R n M →ₗ[R] R :=
   PiTensorProduct.lift (MultilinearMap.compLinearMap (MultilinearMap.mkPiRing R (Fin n) 1) f)
 
 @[simp]
-lemma _root_.TensorPower.linearFormOfFamily_apply_tprod (f : (i : Fin n) → (M →ₗ[R] R)) (v : Fin n → M) :
+lemma _root_.TensorPower.linearFormOfFamily_apply_tprod (f : (_ : Fin n) → (M →ₗ[R] R)) (v : Fin n → M) :
     TensorPower.linearFormOfFamily R n f (PiTensorProduct.tprod R v) =
     Finset.prod Finset.univ (fun i => (f i (v i))) := by
   unfold TensorPower.linearFormOfFamily
@@ -410,18 +409,18 @@ lemma _root_.TensorPower.linearFormOfFamily_apply_tprod (f : (i : Fin n) → (M 
 exterior power of `M`, by composing the map `ExteriorPower.toTensorPower` to the `n`th tensor
 power and then applying `TensorPower.linearFormOfFamily` (which takes the product of the
 components of `f`).-/
-noncomputable def linearFormOfFamily (f : (i : Fin n) → (M →ₗ[R] R)) :
+noncomputable def linearFormOfFamily (f : (_ : Fin n) → (M →ₗ[R] R)) :
     ExteriorPower R M n →ₗ[R] R :=
   LinearMap.comp (TensorPower.linearFormOfFamily R n f) (toTensorPower R M n)
 
 @[simp]
-lemma linearFormOfFamily_apply (f : (i : Fin n) → (M →ₗ[R] R)) (x : ExteriorPower R M n) :
+lemma linearFormOfFamily_apply (f : (_ : Fin n) → (M →ₗ[R] R)) (x : ExteriorPower R M n) :
     linearFormOfFamily R n f x = TensorPower.linearFormOfFamily R n f (toTensorPower R M n x) := by
   unfold linearFormOfFamily
   simp only [LinearMap.coe_comp, Function.comp_apply]
 
 @[simp]
-lemma linearFormOfFamily_apply_ιMulti (f : (i : Fin n) → (M →ₗ[R] R)) (m : Fin n → M) :
+lemma linearFormOfFamily_apply_ιMulti (f : (_ : Fin n) → (M →ₗ[R] R)) (m : Fin n → M) :
     linearFormOfFamily R n f (ιMulti R n m) = ∑ σ : Equiv.Perm (Fin n),
     Equiv.Perm.sign σ • ∏ i, f i (m (σ i)) := by
   simp only [linearFormOfFamily_apply, toTensorPower_apply_ιMulti, map_sum,
@@ -431,7 +430,7 @@ lemma linearFormOfFamily_apply_ιMulti (f : (i : Fin n) → (M →ₗ[R] R)) (m 
 from `N` to `M`, then the composition of `ExteriorPower.linearFormOfFamily R n f` and
 of `ExteriorPower.map p` is equal to the linear form induced by the family
 `fun i ↦ (f i).comp p`..-/
-lemma linearFormOfFamily_comp_map (f : (i : Fin n) → (M →ₗ[R] R)) (p : N →ₗ[R] M) :
+lemma linearFormOfFamily_comp_map (f : (_ : Fin n) → (M →ₗ[R] R)) (p : N →ₗ[R] M) :
     (linearFormOfFamily R n f).comp (map n p) =
     linearFormOfFamily R n (fun (i : Fin n) => (f i).comp p) := by
   apply LinearMap.ext_on (ιMulti_span R n (M := N))
@@ -442,7 +441,7 @@ lemma linearFormOfFamily_comp_map (f : (i : Fin n) → (M →ₗ[R] R)) (p : N �
     TensorPower.linearFormOfFamily_apply_tprod]
 
 @[simp]
-lemma linearFormOfFamily_comp_map_apply (f : (i : Fin n) → (M →ₗ[R] R))
+lemma linearFormOfFamily_comp_map_apply (f : (_ : Fin n) → (M →ₗ[R] R))
     (p : N →ₗ[R] M) (x : ExteriorPower R N n) :
     (linearFormOfFamily R n f) (map n p x) =
     linearFormOfFamily R n (fun (i : Fin n) => (f i).comp p) x := by
@@ -452,12 +451,12 @@ lemma linearFormOfFamily_comp_map_apply (f : (i : Fin n) → (M →ₗ[R] R))
 on `M`, by composing the linear form on `ExteriorPower R M n` indeuced by `f` (defined in
 `ExteriorPower.linearFormOfFamily`) with the canonical `n`-fold alternating map from `M` to its
 `n`th exterior power.-/
-noncomputable def alternatingFormOfFamily (f : (i : Fin n) → (M →ₗ[R] R)) :
+noncomputable def alternatingFormOfFamily (f : (_ : Fin n) → (M →ₗ[R] R)) :
     AlternatingMap R M R (Fin n) :=
   (linearFormOfFamily R n f).compAlternatingMap (ιMulti R n)
 
 @[simp]
-lemma alternatingFormOfFamily_apply (f : (i : Fin n) → (M →ₗ[R] R)) (m : Fin n → M) :
+lemma alternatingFormOfFamily_apply (f : (_ : Fin n) → (M →ₗ[R] R)) (m : Fin n → M) :
     alternatingFormOfFamily R n f m = linearFormOfFamily R n f (ιMulti R n m) := by
   unfold alternatingFormOfFamily
   rw [LinearMap.compAlternatingMap_apply]
@@ -637,7 +636,7 @@ lemma sum_range_map (f : N →ₗ[R] M) (f' : N' →ₗ[R] M) (f'' : N''→ₗ[R
 
 /-- Every element of ExteriorPower R M n is in the image of ExteriorPower R P n, for some finitely
 generated submodule P of M.-/
-lemma mem_exteriorPower_from_mem_finite (x : ExteriorPower R M n) :
+lemma mem_exteriorPower_is_mem_finite (x : ExteriorPower R M n) :
     ∃ (P : Submodule R M), Submodule.FG P ∧ x ∈ LinearMap.range (map n (Submodule.subtype P)) := by
   have hx : x ∈ (⊤ : Submodule R (ExteriorPower R M n)) := by simp only [Submodule.mem_top]
   rw [← ιMulti_span] at hx
@@ -657,7 +656,7 @@ lemma mem_exteriorPower_from_mem_finite (x : ExteriorPower R M n) :
     Function.comp_apply, ← hmx]
   congr
 
-/-! Results that only work over a field.-/
+/-! Results that only hold over a field.-/
 
 /-- If `v` is a linearly independent family of vectors (indexed by a linearly ordered type),
 then the family of its `n`-fold exterior products is also linearly independent.-/

@@ -50,8 +50,8 @@ toDualContinuousAlternatingMap (F := F) (a • x) = a • toDualContinuousAltern
 lemma toDualContinuousAlternatingMap_apply_ιMulti (m : Fin r → E) (f : ContinuousAlternatingMap 𝕜 E F (Fin r)) :
 toDualContinuousAlternatingMap (ιMulti 𝕜 r m) f = f m := by
   unfold toDualContinuousAlternatingMap
-  simp only [liftAlternating_apply_ιMulti, ContinuousAlternatingMap.coe_coe, LinearMap.coe_mk,
-    AddHom.coe_mk]
+  simp only [liftAlternating_apply_ιMulti, AlternatingMap.coe_mk, ContinuousMultilinearMap.coe_coe,
+    ContinuousAlternatingMap.coe_toContinuousMultilinearMap, LinearMap.coe_mk, AddHom.coe_mk]
 
 lemma toDualContinuousAlternatingMap_bound (x : ExteriorPower 𝕜 E r) :
 ∃ (C : ℝ), 0 ≤ C ∧ ∀ (f : ContinuousAlternatingMap 𝕜 E F (Fin r)), ‖toDualContinuousAlternatingMap x f‖ ≤ C * ‖f‖ := by
@@ -207,7 +207,7 @@ AlternatingMap.mkContinuousAlternating (alternatingFormOfFamily 𝕜 r (fun i =>
 ((Nat.factorial r) * (Finset.prod Finset.univ (fun (i : Fin r) => ‖f i‖)))
 (by intro m
     simp only [alternatingFormOfFamily_apply, linearFormOfFamily_apply, toTensorPower_apply_ιMulti,
-      map_sum, LinearMap.map_smul_of_tower, TensorPower_linearFormOfFamily_apply_tprod,
+      map_sum, LinearMap.map_smul_of_tower, TensorPower.linearFormOfFamily_apply_tprod,
       ContinuousLinearMap.coe_coe]
     refine le_trans (norm_sum_le _ _) ?_
     conv_rhs => congr

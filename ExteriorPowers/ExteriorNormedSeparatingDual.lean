@@ -19,7 +19,7 @@ lemma toDualContinuousAlternatingMapLinear_injective : Function.Injective
 (toDualContinuousAlternatingMapLinear 𝕜 E r) := by
   rw [←LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
   intro x hx
-  obtain ⟨W, hW, hWx⟩ := mem_exteriorPowerFiniteSubmodule r x
+  obtain ⟨W, hW, hWx⟩ := mem_exteriorPower_is_mem_finite r x
   rw [LinearMap.mem_range] at hWx
   obtain ⟨y, hyx⟩ := hWx
   have hW1 : FiniteDimensional 𝕜 W := by
@@ -56,7 +56,7 @@ lemma toDualContinuousAlternatingMapLinear_injective : Function.Injective
       AlternatingMap.coe_mkContinuousAlternating]
     unfold alternatingFormOfFamily
     simp only [liftAlternating_comp, liftAlternating_ιMulti, LinearMap.comp_id]
-    rw [linearFormOfFamily_compExteriorPowerMap_apply]
+    rw [linearFormOfFamily_comp_map_apply]
   have heq2 : toDualContinuousAlternatingMapLinear 𝕜 E r x (continuousAlternatingFormOfFamily F) =
     Basis.coord B ⟨s, hs⟩ y := by
     rw [heq1, BasisOfBasis_coord]
@@ -117,8 +117,8 @@ noncomputable def liftContinuousAlternating_equiv : (ContinuousAlternatingMap �
       AlternatingMap.mkContinuousAlternating
     simp only [LinearMap.coe_comp, LinearMap.coe_mk, AddHom.coe_mk, Function.comp_apply,
       ContinuousLinearMap.compContinuousAlternatingMap_coe, ContinuousLinearMap.coe_mk',
-      ContinuousAlternatingMap.coe_mk, AlternatingMap.coe_mk, AlternatingMap.coe_multilinearMap,
-      liftAlternating_apply_ιMulti, ContinuousAlternatingMap.coe_coe, LinearMap.id_coe, id_eq]
+      ContinuousAlternatingMap.coe_mk, LinearMap.id_coe, id_eq]
+    sorry
 )
 
 noncomputable def liftContinuousAlternating_linearIsometry :

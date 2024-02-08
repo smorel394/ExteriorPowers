@@ -102,19 +102,16 @@ lemma contMDiff_iff_contMDiffAt {𝕜 : Type u_1} [NontriviallyNormedField 𝕜]
       exact contMDiff_of_contMDiffAt _ _ _ _ (fun x ↦ ContMDiffAt.of_le (hdiff x) (le_refl _))
 
 lemma linearIndependent_of_dualFamily {ι : Type*} (R : Type*) {M : Type*} (v : ι → M)
-    [CommSemiring R] [AddCommMonoid M] [Module R M] (dv : ι → Module.Dual R M)
+    [Semiring R] [AddCommMonoid M] [Module R M] (dv : ι → (M →ₗ[R] R))
     (h1 : ∀ (a : ι) (b : ι), a ≠ b → (dv a) (v b) = 0) (h2 : ∀ (a : ι), (dv a) (v a) = 1) :
     LinearIndependent R v := by
   rw [linearIndependent_iff']
   intro s g hrel i hi
   apply_fun (fun x => dv i x) at hrel
-  rw [map_zero, map_sum, ← (Finset.sum_subset (s₁ := {i}) (f := fun j => (dv i) (g j • v j))
-    (Finset.singleton_subset_iff.mpr hi))] at hrel
-  · simp only [map_smulₛₗ, RingHom.id_apply, smul_eq_mul, Finset.sum_singleton, h2 i, mul_one]
-      at hrel
-    exact hrel
-  · exact fun j _ hij ↦ by simp only [Finset.mem_singleton] at hij; rw [map_smul]
-                           exact smul_eq_zero_of_right _ (h1 i j (Ne.symm hij))
+  simp only [map_sum, map_smul, smul_eq_mul, map_zero] at hrel
+  rw [Finset.sum_eq_single i (fun j _ hj ↦ by rw [h1 i j (Ne.symm hj), mul_zero])
+    (fun hi' ↦ False.elim (hi' hi)), h2 i, mul_one] at hrel
+  exact hrel
 
 lemma vector_normalize (𝕜 E : Type*) [NontriviallyNormedField 𝕜] [SeminormedAddCommGroup E]
     [NormedSpace 𝕜 E] (x : E) : ∃ (y : E) (a : 𝕜), ‖y‖ ≤ 1 ∧ x = a • y  := by
