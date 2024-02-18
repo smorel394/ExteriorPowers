@@ -570,7 +570,7 @@ noncomputable def BasisOfBasis {I : Type*} [LinearOrder I] (b : Basis I R M) :
 
 @[simp]
 lemma BasisOfBasis_coe {I : Type*} [LinearOrder I] (b : Basis I R M) :
-    FunLike.coe (BasisOfBasis R n b) = ιMulti_family R n b := Basis.coe_mk _ _
+    DFunLike.coe (BasisOfBasis R n b) = ιMulti_family R n b := Basis.coe_mk _ _
 
 @[simp]
 lemma BasisOfBasis_apply {I : Type*} [LinearOrder I] (b : Basis I R M)

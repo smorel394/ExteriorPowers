@@ -5,6 +5,26 @@ import Mathlib.LinearAlgebra.Projectivization.Basic
 
 open scoped LinearAlgebra.Projectivization
 
+def is_even_b : ℕ → Bool
+  | 0 => true
+  | 1 => false
+  | n + 2  => is_even_b n
+
+inductive is_even : ℕ → Prop where
+  | is_even_zero : is_even 0
+  | is_even_succsucc : ∀ n, is_even n → is_even n.succ.succ
+
+lemma is_even_b_correct : ∀ n, is_even_b n = true ↔ is_even n := by
+  simp_rw [iff_def]; rw [forall_and]
+  constructor
+  all_goals (apply Nat.twoStepInduction)
+  · exact fun _ ↦ is_even.is_even_zero
+  · exact fun h ↦ by exfalso; simp only [is_even_b] at h
+  · exact fun _ hn _ h ↦ by rw [is_even_b] at h; apply is_even.is_even_succsucc; exact hn h
+  · exact fun _ ↦ by rw [is_even_b]
+  · exact fun h ↦ by cases h
+  · exact fun _ hn _ h ↦ by rw [is_even_b]; apply hn; cases h; assumption
+
 
 #check (2 : ℝ)
 
