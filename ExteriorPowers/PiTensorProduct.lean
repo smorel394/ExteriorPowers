@@ -110,16 +110,11 @@ noncomputable example : Seminorm 𝕜 (⨂[𝕜] i, E i) :=
   (toDualContinuousMultilinearMap (F := F) (𝕜 := 𝕜) (E := E))
 
 def DualNorms : Set (Seminorm 𝕜 (⨂[𝕜] i, E i)) :=
-  {p | ∃ (G : Type (max u_1 u_2 u_3)) (_ : SeminormedAddCommGroup G) (_ : NormedSpace 𝕜 G),
-    p = Seminorm.comp
-  {toFun := fun x ↦ ‖x‖
-   map_zero' := norm_zero
-   add_le' := norm_add_le
-   neg' := norm_neg
-   smul' := norm_smul}
+  {p | ∃ (G : Type (max (max u_1 u_2) u_3)) (_ : SeminormedAddCommGroup G) (_ : NormedSpace 𝕜 G),
+    p = Seminorm.comp (normSeminorm 𝕜 (ContinuousMultilinearMap 𝕜 E G →L[𝕜] G))
   (toDualContinuousMultilinearMap (F := G) (𝕜 := 𝕜) (E := E))}
 
-lemma DualNormd_bddAbove : BddAbove (DualNorms (𝕜 := 𝕜) (E := E)) := by
+lemma DualNorms_bddAbove : BddAbove (DualNorms (𝕜 := 𝕜) (E := E)) := by
   rw [Seminorm.bddAbove_iff]
   set bound : (⨂[𝕜] i, E i) → ℝ :=
     fun x ↦ Classical.choose (toDualMultilinearMap_bound' x)
@@ -144,8 +139,45 @@ lemma DualNormd_bddAbove : BddAbove (DualNorms (𝕜 := 𝕜) (E := E)) := by
 noncomputable def DualSeminorm : Seminorm 𝕜 (⨂[𝕜] i, E i) :=
   sSup (DualNorms (𝕜 := 𝕜) (E := E))
 
-theorem DualSemiNorm_is_good : ∀ (G : Type*) [SeminormedAddCommGroup G] [NormedSpace 𝕜 G]
-    (f : ContinuousMultilinearMap 𝕜 E G),
-    ‖lift f.toMultilinearMap x‖ ≤ ‖f‖ * DualSeminorm x := sorry
+theorem DualSemiNorm_is_good (G : Type*) [SeminormedAddCommGroup G] [NormedSpace 𝕜 G]
+    (f : ContinuousMultilinearMap 𝕜 E G) :
+    ‖lift f.toMultilinearMap x‖ ≤ ‖f‖ * DualSeminorm x := by
+  set G' := (⨂[𝕜] i, E i) ⧸ LinearMap.ker (lift f.toMultilinearMap)
+  set G'' := LinearMap.range (lift f.toMultilinearMap)
+  set e := LinearMap.quotKerEquivRange (lift f.toMultilinearMap)
+  letI := SeminormedAddCommGroup.induced G' G'' e
+  letI := NormedSpace.induced 𝕜 G' G'' e
+  set f'₀ := lift.symm (e.symm.toLinearMap ∘ₗ LinearMap.rangeRestrict (lift f.toMultilinearMap))
+  have hf'₀ : ∀ (x : Π (i : ι), E i), ‖f'₀ x‖ ≤ ‖f‖ * ∏ i, ‖x i‖ := fun x ↦ by
+    change ‖e (f'₀ x)‖ ≤ _
+    simp only [lift_symm, LinearMap.compMultilinearMap_apply, LinearMap.coe_comp,
+        LinearEquiv.coe_coe, Function.comp_apply, LinearEquiv.apply_symm_apply, Submodule.coe_norm,
+        LinearMap.codRestrict_apply, lift.tprod, ContinuousMultilinearMap.coe_coe, e, f'₀]
+    exact f.le_opNorm x
+  set f' := MultilinearMap.mkContinuous f'₀ ‖f‖ hf'₀
+  have hnorm : ‖f'‖ ≤ ‖f‖ := (f'.opNorm_le_iff (norm_nonneg f)).mpr hf'₀
+  have heq : e (lift f'.toMultilinearMap x) = lift f.toMultilinearMap x := by
+    induction' x using PiTensorProduct.induction_on with a m _ _ hx hy
+    · simp only [lift_symm, map_smul, lift.tprod, ContinuousMultilinearMap.coe_coe,
+      MultilinearMap.coe_mkContinuous, LinearMap.compMultilinearMap_apply, LinearMap.coe_comp,
+      LinearEquiv.coe_coe, Function.comp_apply, LinearEquiv.apply_symm_apply, SetLike.val_smul,
+      LinearMap.codRestrict_apply, f', f'₀]
+    · simp only [map_add, AddSubmonoid.coe_add, Submodule.coe_toAddSubmonoid, hx, hy]
+  suffices h : ‖lift f'.toMultilinearMap x‖ ≤ ‖f'‖ * DualSeminorm x by
+    change ‖(e (lift f'.toMultilinearMap x)).1‖ ≤ _ at h
+    rw [heq] at h
+    refine le_trans h (mul_le_mul_of_nonneg_right hnorm (apply_nonneg _ _))
+  have hle : Seminorm.comp (normSeminorm 𝕜 (ContinuousMultilinearMap 𝕜 E G' →L[𝕜] G'))
+      (toDualContinuousMultilinearMap (F := G') (𝕜 := 𝕜) (E := E)) ≤ DualSeminorm := by
+    simp only [DualSeminorm, DualNorms]
+    refine le_csSup DualNorms_bddAbove ?_
+    rw [Set.mem_setOf]
+    existsi G', inferInstance, inferInstance
+    rfl
+  refine le_trans ?_ (mul_le_mul_of_nonneg_left (hle x) (norm_nonneg f'))
+  simp only [Seminorm.comp_apply, coe_normSeminorm, ← toDualContinuousMultilinearMap_apply_apply]
+  rw [mul_comm]
+  exact ContinuousLinearMap.le_opNorm _ _
+
 
 end PiTensorProduct
